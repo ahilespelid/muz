@@ -19,44 +19,42 @@
 
                 <div class="head_el__button_date" style="max-width: 112px;">
                     <label>Дата</label><br>
-                    <button>27 июня 2023</button>
+                    <button><?=($date = new DateTime('now', new DateTimeZone('Europe/Moscow')))->format('d M y');?></button>
                 </div>
 
             </div>
-            <div class="head_el">
+            
+            <div class="head_el">         
                 <div class="head_el__drop">
+@if(!empty($curBase['value']) && !empty($curBase['sphere'])) 
                     <button>
                         <div class="head_el__drop_class_img">
                             <img src="https://partner.musbooking.com/res/bases/220315-1650-2.jpeg">
-                            <div class="head_el__drop_class_label">Консерваторские классы им. П. И. Чайковского<br>
-                            <span class="head_el__drop_class_sublabel">Музыкальные классы</span></div>
+                            <div class="head_el__drop_class_label">{{ $curBase['value'] }}<br>
+                            <span class="head_el__drop_class_sublabel">{{ $curBase['sphere'] }}</span></div>
                             <div>&#9660;</div>
                         </div>
                     </button>
-
+@endif
                   <div class="head_el__drop_content">
-                    <a href="#">
+@foreach($bases as $base) 
+                    <a href="{{ route('front.home', ['baseId' => $base['id'],]) }}">
                         <div class="head_el__drop_content_class_img">
-                            <img src="https://partner.musbooking.com/res/bases/220315-1650-2.jpeg">
-                            <div class="head_el__drop_content_class_label">Консерваторские классы им. П. И. Чайковского<br>
-                            <span class="head_el__drop_content_class_sublabel">Музыкальные классы</span></div>
+                            <img src="{{ $curBaseImg[array_rand($curBaseImg)] }}">
+                            <div class="head_el__drop_content_class_label">{{ $base['value'] }}<br>
+                            <span class="head_el__drop_content_class_sublabel">{{ $base['sphere'] }}</span></div>
                         </div>
                     </a>
-                    <a href="#">
-                        <div class="head_el__drop_content_class_img">
-                            <img src="https://partner.musbooking.com/res/bases/220314-2123-5.jpeg">
-                            <div class="head_el__drop_content_class_label"> Консерваторские классы им. П.И. Чайковского Филиал Брюсов-Плаза<br>
-                            <span class="head_el__drop_content_class_sublabel">Музыкальные классы</span></div>
-                        </div>
-                    </a>
+@endforeach
                   </div>
                 </div>
-                
+             
                 <div class="head_el__help" >&#63;</div>
                 <div class="head_el__setting">&#9881;</div>
                             
             
             </div>
+
         </div>
     </div>
     <div id="body" style="width:100%; height: 55vh; background: rgb(250,250,250);">
@@ -64,40 +62,21 @@
         <table>
             <tbody>
                 <tr>
-                    <td style="width: 50px"><div class="body__tb_day_title">пн</div><div class="body__tb_day_title_number">26</div></td>
-                    <td><div class="body__tb_room_item item_0"><span>Чайковский</span></div></td>
-                    <td><div class="body__tb_room_item item_1"><span>Шопен</span></div></td>
-                    <td><div class="body__tb_room_item item_2"><span>Шаляпин</span></div></td>
-                    <td><div class="body__tb_room_item item_3"><span>Глинка</span></div></td>
-                    <td><div class="body__tb_room_item item_4"><span>Шуман</span></div></td>
-                    <td><div class="body__tb_room_item item_5"><span>Вивальди</span></div></td>
-                    <td><div class="body__tb_room_item item_6"><span>Римский-Корсаков</span></div></td>
-                    <td><div class="body__tb_room_item item_7"><span>Мусоргский</span></div></td>
-                    <td><div class="body__tb_room_item item_8"><span>Бетховен</span></div></td>
-                    <td><div class="body__tb_room_item item_9"><span>Бах</span></div></td>
-                    <td><div class="body__tb_room_item item_10"><span>Бородин</span></div></td>
-                    <td><div class="body__tb_room_item item_11"><span>Моцарт</span></div></td>
-                    <td><div class="body__tb_room_item item_12"><span>Рахманинов</span></div></td>
-                    <td><div class="body__tb_room_item item_13"><span>Могучая кучка</span></div></td>
+                    <td style="width: 50px"><div class="body__tb_day_title"><?=$week[$date->format('N')];?></div><div class="body__tb_day_title_number"><?=$date->format('d');?></div></td>
+@foreach($clases as $k => $clase)
+                    <td><div class="body__tb_room_item item_{{ $k }}"><span>{{ $clase['value'] }}</span></div></td>
+@endforeach                    
+@php @endphp
                 </tr>
+@foreach($curTimes as $time)
                 <tr>
-                    <td>9:00</td>
-                    <td><div class="body__tb_block_empty item_0">&nbsp;</div></td>
-                    <td><div class="body__tb_block_empty item_1">&nbsp;</div></td>
-                    <td><div class="body__tb_block_empty item_2">&nbsp;</div></td>
-                    <td><div class="body__tb_block_empty item_3">&nbsp;</div></td>
-                    <td><div class="body__tb_block_empty item_4">&nbsp;</div></td>
-                    <td><div class="body__tb_block_empty item_5">&nbsp;</div></td>
-                    <td><div class="body__tb_block_empty item_6">&nbsp;</div></td>
-                    <td><div class="body__tb_block_empty item_7">&nbsp;</div></td>
-                    <td><div class="body__tb_block_empty item_8">&nbsp;</div></td>
-                    <td><div class="body__tb_block_empty item_9">&nbsp;</div></td>
-                    <td><div class="body__tb_block_empty item_10">&nbsp;</div></td>
-                    <td><div class="body__tb_block_empty item_11">&nbsp;</div></td>
-                    <td><div class="body__tb_block_empty item_12">&nbsp;</div></td>
-                    <td><div class="body__tb_block_empty item_13">&nbsp;</div></td>
+                    <td>{{ $time }}</td>
+@for($i = 0; $i < count($clases); $i++)
+                    <td><div class="body__tb_block_empty item_{{ $i }}">&nbsp;</div></td>
+@endfor
                 </tr>
-                <tr>
+@endforeach
+                <!--tr>
                     <td>10:00</td>
                     <td><div class="body__tb_block_select item_0">&nbsp;</div></td>
                     <td><div class="body__tb_block_select item_1">&nbsp;</div></td>
@@ -220,39 +199,8 @@
                     <td><div class="body__tb_block_empty item_11">&nbsp;</div></td>
                     <td><div class="body__tb_block_empty item_12">&nbsp;</div></td>
                     <td><div class="body__tb_block_empty item_13">&nbsp;</div></td>
-                </tr>
-                <tr>
-                    <td>16:00</td>
-                    <td>&nbsp;</td>
-                </tr>
-                <tr>
-                    <td>17:00</td>
-                    <td>&nbsp;</td>
-                </tr>
-                <tr>
-                    <td>18:00</td>
-                    <td>&nbsp;</td>
-                </tr>
-                <tr>
-                    <td>19:00</td>
-                    <td>&nbsp;</td>
-                </tr>
-                <tr>
-                    <td>20:00</td>
-                    <td>&nbsp;</td>
-                </tr>
-                <tr>
-                    <td>21:00</td>
-                    <td>&nbsp;</td>
-                </tr>
-                <tr>
-                    <td>22:00</td>
-                    <td>&nbsp;</td>
-                </tr>
-                <tr>
-                    <td>23:00</td>
-                    <td>&nbsp;</td>
-                </tr>
+                </tr-->
+
             </tbody>
         </table>    
     </div>
@@ -288,6 +236,57 @@
                 </div>
         </div>
     </div>
+
+    <div class="calendar off">
+        <div class="calendar__header"></div>
+        <div class="calendar__dropdown off">
+            <ul>
+                <li data-index=0>Январь</li>
+                <li data-index=1>Февраль</li>
+                <li data-index=2>Март</li>
+                <li data-index=3>Апрель</li>
+                <li data-index=4>Май</li>
+                <li data-index=5>Июнь</li>
+                <li data-index=6>Июль</li>
+                <li data-index=7>Август</li>
+                <li data-index=8>Сентябрь</li>
+                <li data-index=9>Октябрь</li>
+                <li data-index=10>Ноябрь</li>
+                <li data-index=11>Декабрь</li>
+            </ul>
+        </div>
+        <div class="calendar__body">
+            <div class="calendar__body__month">
+                <button class="prev">
+                    <img src="/assets/svg/arrow-left.svg" alt="">
+                </button>
+
+                <p class="dropdownToggle">
+                    <span id="currentDate"></span>
+                    <img src="/assets/svg/arrow-down.svg" alt="">
+                </p>
+
+                <button class="next">
+                    <img class="arrow-right" src="/assets/svg/arrow-left.svg" alt="">
+                </button>
+            </div>
+            <div class="calendar__body__wrapper">
+                <div class="calendar__body__week">
+                    <div class="calendar__body__item">пт</div>
+                    <div class="calendar__body__item">вт</div>
+                    <div class="calendar__body__item">ср</div>
+                    <div class="calendar__body__item">чт</div>
+                    <div class="calendar__body__item">пт</div>
+                    <div class="calendar__body__item">сб</div>
+                    <div class="calendar__body__item">вс</div>
+                </div>
+                <div class="calendar__body__days">
+
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="calendarBlack off"></div>
 
 </div>
 @endsection

@@ -22,7 +22,8 @@ button{
 .head_el{
     display: flex;
     justify-content: space-between;
-    align-items: center;    
+    align-items: center;
+    width: 22%;    
 }
 
 
@@ -274,6 +275,10 @@ button{
     color: rgba(0,0,0,.87);
     box-shadow: 0 3px 1px -2px rgba(0,0,0,.2),0 2px 2px 0 rgba(0,0,0,.14),0 1px 5px 0 rgba(0,0,0,.12);    
 }
+.card__gr{
+    display: flex;
+    gap: 50px;
+}
 .card__gr_label_title{
     color: rgba(0,0,0,.87);
     box-sizing: inherit;
@@ -286,4 +291,230 @@ button{
     font-family: Roboto,sans-serif!important;
     padding: 0 10px;
     text-align: left;
+}
+
+.calendar {
+    width: 350px;
+    /*min-height: 600px;*/
+
+    color: #000;
+
+    border-radius: 10px;
+    background-color: #fff;
+
+    position: fixed;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+
+    z-index: 5;
+}
+
+.calendar.off {
+    transform: translate(-50%, -50%) scale(0.8);
+    opacity: 0;
+
+    pointer-events: none;
+
+    transition: .3s;
+}
+
+.calendar.on {
+    transform: translate(-50%, -50%) scale(1);
+    opacity: 1;
+
+    pointer-events: all;
+
+    transition: .3s;
+}
+
+.calendarBlack {
+    width: 100vw;
+    height: 100vh;
+
+    background-color: rgba(0, 0, 0, 0.5);
+    position: fixed;
+    top: 0;
+    left: 0;
+}
+
+.calendarBlack.off {
+    opacity: 0;
+
+    pointer-events: none;
+
+    transition: .3s;
+}
+
+.calendarBlack.on {
+    opacity: 1;
+
+    pointer-events: all;
+
+    transition: .3s;
+}
+
+
+.calendar .inactive {
+    color: #848484;
+}
+
+.calendar__header {
+    background-color: #e79a00;
+    height: 120px;
+
+    box-sizing: border-box;
+
+    font-weight: bold;
+
+    font-size: 32px;
+    padding: 20px 30px;
+    display: flex;
+    align-items: end;
+
+    color: #fff;
+
+    border-radius: 10px 10px 0 0;
+
+    user-select: none;
+}
+
+.calendar__body {
+    padding: 10px 30px 50px 30px;
+}
+
+.calendar__body__month {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 20px;
+
+    cursor: pointer;
+}
+
+.calendar__body__month p {
+    font-weight: bold;
+}
+
+.calendar__body__month img {
+    cursor: pointer;
+
+    margin-left: 10px;
+    width: 12px;
+}
+
+.calendar__body__month button img {
+    width: 20px;
+}
+
+.calendar__body__month .arrow-right {
+    transform: rotate(180deg);
+}
+
+.calendar__body__wrapper {
+    margin-top: 20px;
+}
+
+.calendar__body__week {
+    display: grid;
+
+    color: #848484;
+    text-transform: uppercase;
+
+    gap: 2px;
+
+    grid-template-rows: 100%;
+    grid-template-columns: calc(100% / 7) calc(100% / 7) calc(100% / 7) calc(100% / 7) calc(100% / 7) calc(100% / 7) calc(100% / 7);
+}
+
+.calendar__body__days {
+    gap: 2px;
+
+    display: grid;
+    grid-template-columns: calc(100% / 7) calc(100% / 7) calc(100% / 7) calc(100% / 7) calc(100% / 7) calc(100% / 7) calc(100% / 7);
+    grid-template-rows:  calc(100% / 6) calc(100% / 6) calc(100% / 6) calc(100% / 6) calc(100% / 6) calc(100% / 6);
+}
+
+.calendar__body__item {
+    border-radius: 50%;
+
+    cursor: pointer;
+
+    min-height: 41px;
+
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    
+    transition: .3s;
+}
+
+.calendar__body__item:hover {
+    background-color: #ddd;
+
+    transition: .3s;
+}
+
+.calendar__body__item.active {
+    color: #fff;
+    background-color: #9929d7;
+
+    transition: .3s;
+}
+
+.calendar__dropdown {
+    width: 150px;
+    max-height: 300px;
+
+    background-color: #fff;
+
+    border-radius: 4px;
+
+    padding: 10px 0;
+
+    overflow-y: auto;
+
+    position: absolute;
+
+    bottom: 5px;
+    left: 86px;
+    box-shadow: 0 0 5px 0 #000;
+}
+
+.calendar__dropdown.on {
+    transform: translateY(0px);
+
+    pointer-events: all;
+
+    opacity: 1;
+
+    transition: .3s;
+}
+
+.calendar__dropdown.off {
+    transform: translateY(-20px);
+
+    pointer-events: none;
+
+    opacity: 0;
+
+    transition: .3s;
+}
+
+.calendar__dropdown ul {
+    list-style: none;
+}
+
+.calendar__dropdown li {
+    cursor: pointer;
+
+    padding: 5px 30px;
+
+    transition: .3s;
+}
+
+.calendar__dropdown li:hover {
+    background-color: #cecece;
+
+    transition: .3s;
 }

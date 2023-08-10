@@ -98,6 +98,14 @@ document.addEventListener('DOMContentLoaded', () => {
             '<div>Стоимость: <span id="stoimost">0</span> ₽</div>'+
         '</div>'+
     '</div>'+
+    '<div class="card__gr_label">'+
+        '<div class="card__gr_label_title">'+
+            '<div>Имя:&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<input type="text" name="name"> </div>'+
+            '<div>Фамилия:&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<input type="text" name="sename"> </div>'+
+            '<div>Телефон:&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<input type="text" name="phone"> </div>'+
+            '<div>Коментарий:&nbsp;<textarea name="commit"></textarea> </div>'+
+        '</div>'+
+    '</div>'+
 '</div>';
 log(document.querySelectorAll('.body__tb_block_new').length);
             if(0 == document.querySelectorAll('.body__tb_block_new').length){
@@ -109,6 +117,146 @@ log(document.querySelectorAll('.body__tb_block_new').length);
     });
     
 });
+
+//Calendar script
+
+// const monthLength = [31, 28, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31];
+const monthNames = ["Январь", "Февраль","Март","Апрель","Май","Июнь","Июль","Август","Сентябрь","Октябрь", "Ноябрь","Декабрь"]
+const weekDayNames = ["пн","вт","ср","чт","пт","сб","вс"]
+
+document.addEventListener("DOMContentLoaded", function () {
+    let currentDate = document.querySelector("#currentDate"),
+    calendar = document.querySelector(".calendar"),
+    calendarHeader = document.querySelector(".calendar__header"),
+    calendarBlack = document.querySelector(".calendarBlack"),
+    daysWrapper = document.querySelector(".calendar__body__days"),
+    arrows = document.querySelectorAll(".calendar__body__month button"),
+    output = document.querySelector(".head_el__button_date button"),
+    dropdown = document.querySelector(".calendar__dropdown"),
+    dropdownUl = document.querySelector(".calendar__dropdown ul"),
+    dropdownToggle = document.querySelector(".dropdownToggle"),
+    monthsItems = document.querySelectorAll(".calendar__dropdown ul li")
+
+    let date = new Date(),
+        currYear = date.getFullYear(),
+        currMonth = date.getMonth()
+
+    const renderCalendar = () => {
+        let firstDayofMonth = new Date(currYear, currMonth, 1).getDay(), // getting first day of month
+            lastDateofMonth = new Date(currYear, currMonth + 1, 0).getDate(), // getting last date of month
+            lastDayofMonth = new Date(currYear, currMonth, lastDateofMonth).getDay(), // getting last day of month
+            lastDateofLastMonth = new Date(currYear, currMonth, 0).getDate()
+        let days = "";
+
+        for (let i = firstDayofMonth - 1; i > 0; i--) {
+            days += `<div class="calendar__body__item inactive lastMonth">${lastDateofLastMonth - i + 1}</div>`
+        }
+
+        for (let i = 1; i <= lastDateofMonth; i++) {
+            days += `<div class="calendar__body__item">${i}</div>`
+        }
+
+        for (let i = lastDayofMonth; i <= 6; i++) { // creating li of next month first days
+            days += `<div class="calendar__body__item inactive nextMonth">${i - lastDayofMonth + 1}</div>`
+        }
+
+        currentDate.innerText = `${monthNames[currMonth]} ${currYear}`;
+        daysWrapper.innerHTML = days;
+    }
+    renderCalendar()
+
+    const showMonths = () => {
+        if(dropdown.classList.contains("off")) {
+            dropdown.classList.remove("off")
+            dropdown.classList.add("on")
+        } else {
+            dropdown.classList.remove("on")
+            dropdown.classList.add("off")
+        }
+    }
+
+    monthsItems.forEach(month => {
+        month.addEventListener("click", function () {
+            currMonth = month.dataset.index
+            showMonths()
+            renderCalendar()
+            getDateFromCalendar()
+        })
+    })
+
+    dropdownToggle.addEventListener("click", function () {
+        showMonths()
+    })
+
+    arrows.forEach(icon => { // getting prev and next icons
+        icon.addEventListener("click", () => { // adding click event on both icons
+            // if clicked icon is previous icon then decrement current month by 1 else increment it by 1
+            currMonth = icon.classList.contains("prev") ? currMonth - 1 : currMonth + 1;
+            if(currMonth < 0 || currMonth > 11) { // if current month is less than 0 or greater than 11
+                // creating a new date of current year & month and pass it as date value
+                date = new Date(currYear, currMonth, new Date().getDate());
+                currYear = date.getFullYear(); // updating current year with new date year
+                currMonth = date.getMonth(); // updating current month with new date month
+            } else {
+                date = new Date(); // pass the current date as date value
+            }
+            renderCalendar(); // calling renderCalendar function
+            getDateFromCalendar()
+        })
+    })
+
+    function getDateFromCalendar() {
+        let days = document.querySelectorAll(".calendar__body__days .calendar__body__item")
+
+        days.forEach(day => {
+            day.addEventListener("click", function () {
+
+                days.forEach(item => item.classList.contains("active") && item.classList.remove("active"))
+
+                day.classList.add("active")
+                let date;
+                if(day.classList.contains("lastMonth")) {
+                    date = new Date(currYear, currMonth - 1, day.innerText)
+                } else if (day.classList.contains("nextMonth")) {
+                    date = new Date(currYear, currMonth + 1, day.innerText)
+                } else {
+                    date = new Date(currYear, currMonth, day.innerText)
+                }
+
+                let month = date.getMonth(),
+                    currDay = date.getDate(),
+                    fullYear = date.getFullYear(),
+                    dayOfWeek = date.getDay()
+
+                output.innerText = `${currDay} ${monthNames[month]} ${fullYear}`;
+                calendarHeader.innerText = `${weekDayNames[dayOfWeek !== 0 ? dayOfWeek - 1 : 6]}, ${monthNames[month].slice(0, 3)} ${currDay}`
+
+                calendar.classList.remove("on")
+                calendar.classList.add("off");
+                calendarBlack.classList.remove("on")
+                calendarBlack.classList.add("off")
+            })
+        })
+    }
+
+    getDateFromCalendar()
+
+    output.addEventListener("click", function () {
+        calendar.classList.contains("on") ? calendar.classList.remove("on") : calendar.classList.add("on");
+        calendarBlack.classList.contains("on") ? calendarBlack.classList.remove("on") : calendarBlack.classList.add("on")
+    })
+
+    calendarBlack.addEventListener("click", function () {
+        calendar.classList.remove("on")
+        calendar.classList.add("off");
+        calendarBlack.classList.remove("on")
+        calendarBlack.classList.add("off")
+    })
+})
+
+
+
+
 
 /* BX24.init(function(){
    
