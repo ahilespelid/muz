@@ -25,7 +25,7 @@ button{
     align-items: center;
     width: 22%;    
 }
-
+.head_el a{text-decoration: none; color:#000;}
 
 .head_el__button_day,.head_el__button_today{
     margin: 0 5px;

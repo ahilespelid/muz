@@ -61,10 +61,13 @@ public function listClases(){
     curl_setopt($this->curl, CURLOPT_HTTPHEADER, ['Authorization:Bearer '.$this->token]);
 return (is_json($json = curl_exec($this->curl))) ? json_decode($json, true) : $json;}
 
-public function listOrders(string $room, int $agoMonth = 1){
+public function listOrders(string $room, string $dfrom = '', string $dto = ''){
     if(empty($this->token) && empty($room)){return null;}
-    $date = date('Y-m-d H:i:s', strtotime(date('Y-m-d H:i:s') . ' -'.$agoMonth.' month'));
-    curl_setopt($this->curl, CURLOPT_URL, $this->url.'/api/orders/wgcalendar?' . http_build_query(['room' => $room]));
+    $dfrom = (empty($dfrom)) ? date('Y-m-d') : $dfrom;
+    $dto = (empty($dto)) ? date('Y-m-d', strtotime($dfrom)) : $dto;
+    //$date = date('Y-m-d H:i:s', strtotime(date('Y-m-d H:i:s') . ' -'.$agoMonth.' month'));
+
+    curl_setopt($this->curl, CURLOPT_URL, $url = $this->url.'/api/orders/wgcalendar?' . http_build_query(['room' => $room, 'dfrom' => $dfrom, 'dto' => $dto])); //pa($url);
     curl_setopt($this->curl, CURLOPT_RETURNTRANSFER, 1);
     curl_setopt($this->curl, CURLOPT_FOLLOWLOCATION, 1);
     curl_setopt($this->curl, CURLOPT_POST, 0);
