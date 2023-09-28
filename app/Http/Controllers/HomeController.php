@@ -21,7 +21,7 @@ public function index(Request $request){
             (!empty($request->PLACEMENT_OPTIONS) && !empty($dealJson = json_decode($request->PLACEMENT_OPTIONS, true))) ? 
                 (empty($dealJson['ID']) ? null : $dealJson['ID']) : null
         ) : $request->dealId;
-    
+
     if($bases = (is_array($bases = $mb->listBases())) ? $bases : null){
         $week = ['пн','вт','ср','чт','пт','сб','вс'];
         $month = ['Январь', 'Февраль','Март','Апрель','Май','Июнь','Июль','Август','Сентябрь','Октябрь', 'Ноябрь','Декабрь'];
@@ -41,7 +41,7 @@ public function index(Request $request){
         $curBaseKey = (!empty($request->baseId) && !empty($bases)) ? array_search($request->baseId, array_column($bases, 'id')) : null;
         $curBase = (empty($curBaseKey)) ? ((!empty($bases[0]['value']) && !empty($bases[0]['sphere'])) ? $bases[0] : null) : $bases[$curBaseKey]; 
         $curBase['workHours'][0]['from'] = (0 === $curBase['workHours'][0]['from']) ? 1 : $curBase['workHours'][0]['from'];
-        
+        //pa($curBase); exit;
         $clases = (!empty($curBase['id'])) ? array_filter($mb->listClases(), function($el) use($curBase){return $el['baseId'] === $curBase['id'];}) : null;
         usort($clases, function($a, $b){return $a['order'] <=> $b['order'];});
         //pa($clases);
@@ -65,7 +65,7 @@ public function index(Request $request){
                     //unset(); 
                     $curOrders[$periodOrder->format('H:00')][$id] = $ordersList[$i]; //array_merge($rooms, [$id => $ordersList[$i]]);
                 }
-    }}}}
+    }}}
     //$curOrders = (empty($curOrders)) ? array_fill_keys($curTimes, $rooms) : array_merge(array_fill_keys($curTimes, $rooms),$curOrders);
     //pa($curOrders); exit;
     //
@@ -77,6 +77,7 @@ public function index(Request $request){
  
 ///*/ Вывод ///*/
     $data = get_defined_vars(); unset($data['request'], $data['mb'], $data['bx']); $data = array_keys($data);
-return view('front.home', compact($data));}             
+return view('front.home', compact($data));}else{
+pa($bases = $mb->listBases());}}             
 
 }

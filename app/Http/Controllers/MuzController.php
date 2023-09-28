@@ -37,7 +37,7 @@ public function listSpheres():?array{
     $url = $this->url.'/api/spheres/search?'.http_build_query(['token' => $this->token]);
 return (is_json($json = file_get_contents($url))) ? json_decode($json, true) : null;}
 
-public function listBases(){
+public function listBases(){//*/ pa($this->url.'/api/bases/names?token='.$this->token); //*/
     if(empty($this->token)){return null;}        
     curl_setopt($this->curl, CURLOPT_URL, $this->url.'/api/bases/names'); 
     curl_setopt($this->curl, CURLOPT_RETURNTRANSFER, 1);
@@ -49,9 +49,9 @@ public function listBases(){
     curl_setopt($this->curl, CURLOPT_HTTPHEADER, ['Authorization:Bearer '.$this->token]);
 return (is_json($json = curl_exec($this->curl))) ? json_decode($json, true) : $json;}
 
-public function listClases(){
+public function listClases(){//*/ pa($this->url.'/api/rooms/names?token='.$this->token); //*/
     if(empty($this->token)){return null;}
-    curl_setopt($this->curl, CURLOPT_URL, $this->url.'/api/rooms/names'); //*/ pa($this->url.'/api/rooms/names?token='.$this->token); //*/
+    curl_setopt($this->curl, CURLOPT_URL, $this->url.'/api/rooms/names');
     curl_setopt($this->curl, CURLOPT_RETURNTRANSFER, 1);
     curl_setopt($this->curl, CURLOPT_FOLLOWLOCATION, 1);
     curl_setopt($this->curl, CURLOPT_POST, 0);

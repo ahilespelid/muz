@@ -49,47 +49,57 @@ document.addEventListener('DOMContentLoaded', () => {
     });
     
     document.querySelectorAll('.body__tb_block_empty').forEach((i, k) => {
-        i.addEventListener('click', function(e){
-            //log(document.querySelectorAll('.card')[0])
+        i.addEventListener('click', function(e){ //log(document.querySelectorAll('.card')[0])
             document.querySelectorAll('.card')[0].style.display='block';
               
             let issetNew = document.querySelectorAll('.body__tb_block_new');
-            log(issetNew)
-            //log(this.classList[1] === issetNew[0].classList[1])
+            let rowTime = this.parentNode.parentNode;
+            let timeSelect = rowTime.firstElementChild;
+            let columnRoom = document.querySelectorAll('.'+this.classList[1]);
+            let roomSelect = columnRoom[0];
+            
+            //log(rowTime); log(timeSelect); log(columnRoom); log(roomSelect); log(issetNew);
+            //log(this.classList[1] === roomSelect.classList[1]);
+            //log(this.classList[1]); log(roomSelect.classList[1]);
+            
+            if(0 == issetNew.length || this.classList[1] === issetNew[0].classList[1]){
+                this.classList.toggle('body__tb_block_new'); timeSelect.classList.toggle('active');
 
-            if(0 == issetNew.length || issetNew[0] === this){ log(this);
-                let timeTr = this.parentNode.parentNode;
-                let timeTh = document.querySelectorAll('.'+this.classList[1])[0];
-                let firstTd = timeTr.firstElementChild;
-                log(timeTh);
-                this.classList.toggle('body__tb_block_new');
-                firstTd.classList.toggle('active');
-
-                [... timeTr.children].forEach((ii, kk) => {
+                [... rowTime.children].forEach((ii, kk) => {
                     if(0==kk){return;}
                     if(i === ii.firstElementChild){
-                        if('' == timeTh.style.background){
-                            timeTh.style.background = rgb;
-                        }else
-                        if(0 == document.querySelectorAll('.body__tb_block_new').length){
-                            timeTh.style.background = '';}
-                        return;}
+                        if('' == roomSelect.style.background){roomSelect.style.background = rgb;}else
+                        if(0 == document.querySelectorAll('.body__tb_block_new').length){roomSelect.style.background = '';}
+                    return;}
                     
-                    if('' == ii.firstElementChild.style.background){
-                        ii.firstElementChild.style.background = rgb;
-                    }else{
-                        ii.firstElementChild.style.background = '';}
+                    if('' == ii.firstElementChild.style.background){ii.firstElementChild.style.background = rgb;}else{ii.firstElementChild.style.background = '';}
                 });
 
-                let times=[]; document.querySelectorAll('.body__tb_block_new').forEach((j, n) => { times.push(j.parentNode.parentNode.firstElementChild.innerText);});
+                let times=[]; document.querySelectorAll('.body__tb_block_new').forEach((j, n) => {times.push(j.parentNode.parentNode.firstElementChild.innerText);});
+                let timestr = '';
+                for(let i = 0; i < times.length; i++){
+                    let timei = parseInt(times[i].split(':')[0]);
+                    let timeint = (24 === timei) ? 0 : timei;
+                    
+                    
+                    if(i === 0){
+                        let str = timeint;}
+                    if(i > 0 && i < times.length - 1){
+                        let cur = timeint; log(cur);}
+                    if(i === times.length - 1){
+                        let lst = timeint; log(lst);}
+                        
+                    timestr += (i === 0) ? timeint : ((timeint === parseInt(times[i-1].split(':')[0])) ? ' - ' : ' , ') + timeint;
+                    
+                   
+                    log(timestr);
+                   
+                }
                 
-                let upload = {
-                    "name": timeTh.innerText,
-                    "times": times
-                };
-                let data = new FormData();
-                data.append("json", JSON.stringify(upload));                              
-        
+                let upload = {"name": roomSelect.innerText, "times": times};
+                let data = new FormData(); data.append("json", JSON.stringify(upload));                              
+                log( JSON.stringify(upload));
+                
                 fetch("/?api=stoimost",{method: "POST", body: data})
                 .then(response => response.json())
                 .then(stoimost => document.getElementById('stoimost').innerText = stoimost.result);
@@ -98,7 +108,7 @@ document.addEventListener('DOMContentLoaded', () => {
 '<div class="card__gr">'+
     '<div class="card__gr_label">'+
         '<div class="card__gr_label_title">'+
-            '<div>'+timeTh.innerText+'</div>'+
+            '<div>'+roomSelect.innerText+'</div>'+
             '<div>'+JSON.stringify(times)+'</div>'+
             '<div>'+document.querySelectorAll('.head_el__button_date button')[0].innerText+'</div>'+
             '<div>Стоимость: <span id="stoimost">0</span> ₽</div>'+
@@ -113,7 +123,7 @@ document.addEventListener('DOMContentLoaded', () => {
         '</div>'+
     '</div>'+
 '</div>';
-log(document.querySelectorAll('.body__tb_block_new').length);
+//log(document.querySelectorAll('.body__tb_block_new').length);
             if(0 == document.querySelectorAll('.body__tb_block_new').length){
                 document.querySelectorAll('.card')[0].innerHTML = ''; document.querySelectorAll('.card')[0].style.display='none';}
             }            
