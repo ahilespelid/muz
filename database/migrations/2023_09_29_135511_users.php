@@ -14,6 +14,7 @@ class Users extends Migration{
             $table->string('fio')->nullable();
             $table->string('phone')->nullable();
             $table->string('email')->nullable();
+            $table->timestamp('deleted_at')->nullable();
             
             $table->timestamps();
         });
