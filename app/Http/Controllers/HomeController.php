@@ -8,6 +8,10 @@ use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\DB;
 use App\Http\Controllers\MuzController;
 use App\Http\Controllers\BtxController;
+use App\Models\Classes;
+use App\Models\Corpuses;
+use App\Models\Orders;
+use App\Models\Users;
 use \Crest;
 
 class HomeController extends Controller{    
@@ -52,7 +56,14 @@ public function index(Request $request){
             $curTimes = ['01:00', '02:00', '03:00', '04:00', '05:00', '06:00', '07:00', '08:00', '09:00', '10:00', '11:00', '12:00', '13:00', '14:00', '15:00', '16:00', '17:00', '18:00', '19:00', '20:00', '21:00', '22:00', '23:00', '24:00'];            
         }
         
-        foreach($clases as $clase){$orders[$clase['id']] = $mb->listOrders($clase['id'], date('Y-m-d', $curDate['timestamp']));} $rooms = array_fill_keys(array_keys($orders), '');
+        foreach($clases as $clase){
+            $orders[$clase['id']] = $mb->listOrders($clase['id'], date('Y-m-d', $curDate['timestamp']));
+            $newClass = Classes::firstOrCreate(['muzid' => $clase['id']]);
+            $newClass->name = $clase['value'];
+            $newClass->corpusesid = $clase['baseId'];
+            $newClass->orders = $clase['order'];
+            $newClass->save();
+        } $rooms = array_fill_keys(array_keys($orders), '');
         //pa($orders['a9b09c01-0057-41dd-a66b-a8c4ec5e4097']); exit; pa($clases); exit;
         $curOrders = array_fill_keys($curTimes, $rooms);
         foreach($orders as $id => $ordersList){
