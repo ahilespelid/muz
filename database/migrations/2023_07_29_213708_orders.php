@@ -9,12 +9,12 @@ class Orders extends Migration{
         Schema::create('orders', function (Blueprint $table) {
             $table->id();
             
-            $table->string('muzid')->nullable()->unique();
+            $table->string('muzid')->nullable();
             $table->string('classesid')->nullable();
             $table->string('usersid')->nullable();
-            $table->string('deal')->nullable();
-            $table->datetime('starttime')->nullable();
-            $table->datetime('endtime')->nullable();
+            $table->integer('deal')->nullable();
+            $table->datetime('datefrom')->nullable();
+            $table->datetime('dateto')->nullable();
             $table->string('amountpeople')->nullable();
             $table->text('comment')->nullable();
             $table->timestamp('deleted_at')->nullable();

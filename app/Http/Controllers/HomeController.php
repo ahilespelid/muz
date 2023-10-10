@@ -1,5 +1,6 @@
 <?php namespace App\Http\Controllers;
 ini_set('memory_limit', '-1');
+set_time_limit(0);
 setlocale(LC_ALL, 'ru_RU.utf8');
 date_default_timezone_set( 'Europe/Moscow' );
 
@@ -64,31 +65,55 @@ public function index(Request $request){
         }else{
             $curTimes = ['01:00', '02:00', '03:00', '04:00', '05:00', '06:00', '07:00', '08:00', '09:00', '10:00', '11:00', '12:00', '13:00', '14:00', '15:00', '16:00', '17:00', '18:00', '19:00', '20:00', '21:00', '22:00', '23:00', '24:00'];            
         }
-        ///*/ Синхранизация классов pa($bases); exit; ///*/
+ ///*/ ПЕРЕБИРАЕМ МАССИВ КЛАСОВ ИЗ МУЗБУКИНГА ///*/
         foreach($clases as $clase){
+ ///*/ ФОРМИРУЕМ МАССИВ ЗАКАЗОВ В КЛАССЕ ///*/
             $orders[$clase['id']] = $mb->listOrders($clase['id'], date('Y-m-d', $curDate['timestamp']));
+ 
+///*/ СОЗДАЁМ ИЛИ ВЫБИРАЕМ КЛАСС ИЗ НАШЕЙ БАЗЫ ПО ID МУЗБУКИНГА ///*/
+            //pa($clase); exit;
+            $prices = include(resource_path('arrays/prices.php'));
+            
             $newClass = Classes::firstOrCreate(['muzid' => $clase['id']]);
             $newClass->name = $clase['value'];
             $newClass->muzid = $clase['id'];
             $newClass->corpusesid = $clase['baseId'];
             $newClass->orders = $clase['order'];
             $newClass->save();
+            //pa($newClass->product); exit;
+///*/ ВЫБИРАЕМ ТОВАР ИЗ БИТРИКСА ЕСЛИ ЕСТЬ ///*/         
+            try{$bxProductId = $bx->bx24->getProduct($newClass->product)['ID'];}catch(\Exception $e){
+                $bxProductId = (str_replace(['"', '}','{', '.', ','], '', explode(':', $e->getMessage())[6]));
+            }
+///*/ ВЫБИРАЕМ МАССИВ ЦЕННИКОВ ИЗ РЕСУРСОВ ///*/
+            $curPrice = $prices[(0 < $key = array_search($newClass->muzid, array_column($prices, 'muzid'))) ? $key : 0]['price'];            
+///*/ ЕСЛИ НЕТ ТОВАРА В БИТРИКСЕ, СОЗДАЁМ ТОВАР С ЦЕНОЙ КЛАССА ///*/ 
+            if('Product is not found' == $bxProductId || 'ID is not defined or invalid' == $bxProductId){
+                $bxProductId = $newClass->product = $bx->bx24->addProduct([
+                    'NAME' => $newClass->name, 
+                    'CURRENCY_ID' => 'RUB', 
+                    'PRICE' => $curPrice,
+                ]);
+            }
+            $newClass->save();           
         } $rooms = array_fill_keys(array_keys($orders), '');
         //pa($orders['a9b09c01-0057-41dd-a66b-a8c4ec5e4097']); exit; 
         //pa($orders); exit;
         $curOrders = array_fill_keys($curTimes, $rooms);
+        $classes = Classes::all();
+        //pa($classes->toArray());exit;
         
         foreach($orders as $id => $ordersList){
 ///*/ ВЫБИРАЕМ ID КЛАССА ИЗ НАШЕЙ БД ///*/
             $classMuzid = (0 <= $key = array_search($id, array_column($clases, 'id'))) ? $clases[$key]['id'] : null;
-            $classId = ($classMuzid) ? Classes::where('muzid', '=', $classMuzid)->get('id')->toArray()[0]['id'] : null;
+            //$classId = ($classMuzid) ? Classes::where('muzid', '=', $classMuzid)->get('id')->toArray()[0]['id'] : null;            
+            $classId = array_search($classMuzid, array_column($classes->toArray(), 'muzid'));
             
             if(!empty($ordersList)){ //$cl = Classes::where('muzid', '=', $id); pa($cl, 5); exit;//pa($classId); exit; //pa($ordersList[$i]); exit;
  ///*/ ПЕРЕБИРАЕМ ЗАКАЗЫ ИЗ МУЗБУКИНГА ///*/
                 for($i=0,$c=count($ordersList); $i<$c; $i++){
 ///*/ ЕСЛИ В ЗАКАЗЕ ЕСТЬ ИМЯ И ТЕЛЕФОН ///*/
                     if(!empty($phone = $ordersList[$i]['phone']) && !empty($fio = $ordersList[$i]['fio'])){
-                        $email = (empty($ordersList[$i]['email'])) ? '' : $ordersList[$i]['email'];
 ///*/ ПРОВЕРЯЕМ ЕСТЬ ЛИ ПОЛЬЗОВАТЕЛЬ В БИТРИКС ПО ТЕЛЕФОНУ, ЕСЛИ НЕТ ///*/
                         if(empty($bxContactIdCheck = $bx->bx24->getContactsByPhone($phone))){
                             list($lastname, $firstname) = explode(' ', trim($fio));
@@ -103,29 +128,56 @@ public function index(Request $request){
                             ]);
 ///*/ ЕСЛИ ПОЛЬЗОВАТЕЛЬ БИТРИКС СУЩЕСТВУЕТ БЕРЁМ ЕГО ID ///*/                            
                         }else{$bxContactId = $bxContactIdCheck[0]['ID'];}
-///*/ ВЫБИРАЕМ ИЛИ СОЗДАЁМ ЕСЛИ НЕТ ПОЛЬЗОВАТЕЛЯ С ТАКИМ ТЕЛЕФОНО И ИМЕНЕМ В НАШЕЙ БАЗЕ ///*/
-                        $newUser = Users::firstOrCreate(['phone' => $phone, 'fio' => $fio]);
-                        $newUser->phone = $phone;
-                        $newUser->fio = $fio;
-                        $newUser->email = $email;
-                        $newUser->bitrixid = $bxContactId;
-                        $newUser->save();
                     }else{
 ///*/ ЕСЛИ В ЗАКАЗЕ НЕТ ИМЯ И ТЕЛЕФОН ///*/
-                        $createUser = Users::create([
-                            'fio' => '',
-                            'key2' => 'val2',
-                        ]);
-                        $userId = (empty($newUser->id)) ? '' : $newUser->id;
+                        $importContact = $bx->bx24->getContact(7);
+                        $phone = (empty($importContact['PHONE'][0]['VALUE'])) ? null : $importContact['PHONE'][0]['VALUE'];
+                        $email = (empty($importContact['EMAIL'][0]['VALUE'])) ? null : $importContact['EMAIL'][0]['VALUE'];
+                        $fio = $importContact['NAME'];
+                        $bxContactId = $importContact['ID'];
                     }
-                    pa($newUser->id);exit;
+                    $email = (empty($ordersList[$i]['email'])) ? '' : $ordersList[$i]['email'];
+ ///*/ ВЫБИРАЕМ ИЛИ СОЗДАЁМ ЕСЛИ НЕТ ПОЛЬЗОВАТЕЛЯ С ТАКИМ ТЕЛЕФОНО И ИМЕНЕМ В НАШЕЙ БАЗЕ ///*/
+                    $newUser = Users::firstOrCreate(['phone' => $phone, 'fio' => $fio]);
+                    $newUser->phone = $phone;
+                    $newUser->fio = $fio;
+                    $newUser->email = $email;
+                    $newUser->bitrixid = $bxContactId;
+                    $newUser->save();
+                    
+                    $userId = $newUser->id;
                     
                     $newOrder = Orders::firstOrCreate(['muzid' => $base['id']]);
-                    $newOrder->muzid = $ordersList[$i]['id'];
-                    $newOrder->usersid = $newUser->id;
-                    $newOrder->name = $base['value'];
-                    $newOrder->type = $base['sphere'];
+                    
+                    //pa($ordersList[$i]);
+                    //if(10 == $i) exit;
+                    
+                    $newOrder->muzid = $ordersList[$i]['id']; 
+                    $newOrder->classesid = $classId;
+                    $newOrder->usersid = $userId;	
+                    //$newOrder->deal = '';
+                    $newOrder->datefrom = $ordersList[$i]['dateFrom'];
+                    $newOrder->dateto = $ordersList[$i]['dateTo'];
+                    //$newOrder->amountpeople = '';
+                    $newOrder->comment = $ordersList[$i]['comment'];                    
                     $newOrder->save();
+                    
+///*/ ВЫБИРАЕМ СДЕЛКУ ИЗ БИТРИКСА ЕСЛИ ЕСТЬ ///*/
+                    try{$dealId = $bx->bx24->getDeal($newOrder->deal, [\App\Bitrix24\Bitrix24API::$WITH_PRODUCTS, \App\Bitrix24\Bitrix24API::$WITH_CONTACTS]);}catch(\Exception $e){
+                        $dealId = str_replace(['"', '}','{', '.', ','], '', (explode('.', explode(':', $e->getMessage())[11])[0]));
+                    }
+///*/ ЕСЛИ НЕТ СДЕЛКИ В БИТРИКСЕ, СОЗДАЁМ СДЕЛКУ ///*/
+                    //$bxProductId = Classes::where();
+                    if('ID is not defined or invalid' == $dealId){
+                        $dealId = $bx->bx24->addDeal([
+                            'TITLE' => $newOrder->muzid, 
+                            'CONTACT_ID' => $bxContactId, 
+                            'PRODUCTS' => array((object)["PRODUCT_ID" => $classes[$classId]['product']]),
+                        ]);
+                    }
+
+                    //pa($classes[$classId]['product']);
+                    //pa($dealId); exit;
 
                 $periodsOrder = new \DatePeriod(new \DateTime(date('H:i', strtotime($ordersList[$i]['dateFrom']))), new \DateInterval('PT1H'), new \DateTime(date('H:i', strtotime($ordersList[$i]['dateTo'])))); 
                 foreach($periodsOrder as $periodOrder){
@@ -147,6 +199,6 @@ public function index(Request $request){
 ///*/ Вывод ///*/
     $data = get_defined_vars(); unset($data['request'], $data['mb'], $data['bx']); $data = array_keys($data);
 return view('front.home', compact($data));}else{
-pa($bases = $mb->listBases());}}             
+pa('Dont` connection internet.');}}             
 
 }

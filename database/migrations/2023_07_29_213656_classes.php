@@ -12,9 +12,10 @@ class Classes extends Migration{
             $table->string('muzid')->nullable()->unique();
             $table->string('corpusesid')->nullable();
             $table->string('name')->nullable();
+            $table->integer('product')->nullable();
             $table->integer('price')->nullable();
             $table->longtext('img')->nullable();
-            $table->string('orders')->nullable();
+            $table->integer('orders')->nullable();
             $table->timestamp('deleted_at')->nullable();
             
             $table->timestamps();
