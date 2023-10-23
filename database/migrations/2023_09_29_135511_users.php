@@ -9,8 +9,8 @@ class Users extends Migration{
         Schema::create('users', function (Blueprint $table){
             $table->id();
             
-            $table->string('muzid')->nullable()->unique();
-            $table->string('bitrixid')->nullable()->unique();
+            //$table->string('muzid')->nullable()->unique();
+            $table->string('bitrixid')->nullable();
             $table->string('fio')->nullable();
             $table->string('phone')->nullable();
             $table->string('email')->nullable();

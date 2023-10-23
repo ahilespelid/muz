@@ -1,6 +1,7 @@
 <?php  //var_dump(__DIR__.'/crest.php'); exit;
-require_once (__DIR__.'/crest.php');
-$handler = 'https://vh72971.rdock.ru/';
+require_once ($crest = __DIR__.'/crest.php');
+//var_dump($crest);
+$handler = 'https://mzc.inter-inc-test.ru/';
 $result = CRest::installApp();
 if($result['rest_only'] === false):?>
     <head>
@@ -17,8 +18,8 @@ if($result['rest_only'] === false):?>
                         params: {
                             PLACEMENT: 'CRM_DEAL_DETAIL_TAB',
                             HANDLER: handler,
-                            TITLE: 'Музбукинг',
-                            DESCRIPTION: 'Локальное приложение "Музбукинг" разработанно @ahilespelid',
+                            TITLE: 'Бронирование классов',
+                            DESCRIPTION: 'Локальное приложение',
                             GROUP_NAME: 'undefaind'
                         },
                     });
@@ -31,16 +32,17 @@ if($result['rest_only'] === false):?>
         <?php endif;?>
     </head>
     <body>
-<?php //
-/*/ 
+<?php 
 if($result['install'] == true):
-pa(CRest::call('placement.bind',[
+//
+/*/ 
+var_dump(CRest::call('placement.bind',[
 'PLACEMENT' => 'CRM_DEAL_DETAIL_TAB',
 'HANDLER' => $handler,
 'LANG_ALL' => [
 'ru' => [
-'TITLE' => 'Музбукинг',
-'DESCRIPTION' => 'Локальное приложение "Музбукинг" разработанно @ahilespelid',
+'TITLE' => 'Бронирование классов',
+'DESCRIPTION' => 'Локальное приложение',
 'GROUP_NAME' => 'undefaind',
 ],],]));
 ///*/?>
@@ -49,4 +51,5 @@ pa(CRest::call('placement.bind',[
             installation error
         <?php endif;?>
     </body>
-<?php ///*/ endif; ?>
+<?php ///*/ 
+endif; ?>

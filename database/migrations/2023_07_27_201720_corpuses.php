@@ -10,7 +10,11 @@ class Corpuses extends Migration{
             $table->id();
                
             $table->string('muzid')->nullable()->unique();
-            $table->string('name')->nullable();           
+            $table->string('name')->nullable();
+            $table->string('workfrom')->nullable();
+            $table->string('workto')->nullable();
+            $table->string('weekfrom')->nullable();
+            $table->string('weekto')->nullable();
             $table->string('type')->nullable();           
             $table->longtext('img')->nullable();
             $table->timestamp('deleted_at')->nullable();

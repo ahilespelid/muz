@@ -9,7 +9,8 @@ use App\Bitrix24\Bitrix24APIException;
 class BtxController extends Controller{
     private $wh; public $bx24;    
 public function __construct(){
-    $this->setWh('https://b24-9948j5.bitrix24.ru/rest/13/wgo3pwvp35lyec0g/');   
+    //$this->setWh('https://b24-9948j5.bitrix24.ru/rest/13/wgo3pwvp35lyec0g/');   
+    $this->setWh('https://b24-9948j5.bitrix24.ru/rest/13/khvv0ut4rdpfeno3/');   
 }
 
 public function addDiel(array $opt):bool{//$opt = ['TITLE' => 'Тестовая сделка №1', 'COMPANY_ID' => 6, 'CONTACT_ID' => 312]

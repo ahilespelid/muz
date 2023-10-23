@@ -60,7 +60,10 @@ document.addEventListener('DOMContentLoaded', () => {
             
             //log(rowTime); log(timeSelect); log(columnRoom); log(roomSelect); log(issetNew);
             //log(this.classList[1] === roomSelect.classList[1]);
-            //log(this.classList[1]); log(roomSelect.classList[1]);
+            //log(this.classList[1]); 
+            //log(roomSelect.parentNode.getAttribute('classid') );
+            //log(roomSelect.parentChild.classList[1]);
+            //log(columnRoom);
             
             if(0 == issetNew.length || this.classList[1] === issetNew[0].classList[1]){
                 this.classList.toggle('body__tb_block_new'); timeSelect.classList.toggle('active');
@@ -105,27 +108,36 @@ document.addEventListener('DOMContentLoaded', () => {
                 .then(stoimost => document.getElementById('stoimost').innerText = stoimost.result);
                 
                 document.querySelectorAll('.card')[0].innerHTML = 
-'<div class="card__gr">'+
-    '<div class="card__gr_label">'+
-        '<div class="card__gr_label_title">'+
-            '<div>'+roomSelect.innerText+'</div>'+
-            '<div>'+JSON.stringify(times)+'</div>'+
-            '<div>'+document.querySelectorAll('.head_el__button_date button')[0].innerText+'</div>'+
-            '<div>Стоимость: <span id="stoimost">0</span> ₽</div>'+
-        '</div>'+
-    '</div>'+
-    '<div class="card__gr_label">'+
-        '<div class="card__gr_label_title">'+
-            '<div>Имя:&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<input type="text" name="name"> </div>'+
-            '<div>Фамилия:&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<input type="text" name="sename"> </div>'+
-            '<div>Телефон:&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<input type="text" name="phone"> </div>'+
-            '<div>Коментарий:&nbsp;<textarea name="commit"></textarea> </div>'+
-        '</div>'+
-    '</div>'+
-'</div>';
+                        
+                '<form action="/" method="post"><div class="card__fl">'+
+                    '<div class="card__fl_clients_item">'+
+                        '<div>'+roomSelect.innerText+'</div>'+
+                        '<div>'+JSON.stringify(times)+'</div>'+
+                        '<div>'+document.querySelectorAll('.head_el__button_date button')[0].innerText+'</div>'+
+                        '<div>Стоимость: <span id="stoimost">0</span> ₽</div>'+
+                    '</div>'+
+                    ''+
+                    '<div class="card__fl_clients_item">'+
+                        '<input type="hidden" name="add" value="order">'+
+                        '<input type="hidden" name="classid" value="'+roomSelect.parentNode.getAttribute('classid')+'">'+
+                        '<input type="hidden" name="date" value="'+document.querySelectorAll('.head_el__button_date button')[0].innerText+'">'+
+                        '<input type="hidden" name="times" value=\''+JSON.stringify(times)+'\'>'+
+                        '<div>Имя:&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<input type="text" name="name"> </div>'+
+                        '<div>Фамилия:&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<input type="text" name="sename"> </div>'+
+                        '<div>Телефон:&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<input type="text" name="phone"> </div>'+
+                        '<div>Email:&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<input type="text" name="email"> </div>'+
+                        '<div>Коментарий:&nbsp;<textarea name="commit"></textarea> </div>'+
+                    '</div>'+
+                    
+                    '<div class="card__fl_clients_item_button">'+
+                        '<input class="head_el__button_today" type="submit" value="Оформить">'+
+                    '</div>'+
+                    ''+
+                '</div></form>';
 //log(document.querySelectorAll('.body__tb_block_new').length);
             if(0 == document.querySelectorAll('.body__tb_block_new').length){
-                document.querySelectorAll('.card')[0].innerHTML = ''; document.querySelectorAll('.card')[0].style.display='none';}
+                document.querySelectorAll('.card__fl')[0].innerHTML = ''; //document.querySelectorAll('.card__fl')[0].style.display='none';
+            }
             }            
             //this.style.background = 'rgb(0,191,255)';
 

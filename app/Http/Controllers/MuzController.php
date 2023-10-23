@@ -8,23 +8,25 @@ use Validator;
 //use \Crest;
 
 class MuzController extends Controller{
-    private $login, $pass, $key, $token; public $curl, $url;
+    public $login, $pass, $key, $curl, $url, $token;
 
 public function __construct(){
     $this->curl = curl_init();
-    $this->setLogin('musicclasses24', 'Lg5BJ8', 'https://partner.musbooking.com'); 
+    $this->setLogin(); 
 }    
 
 public function setLogin(string $login = 'musicclasses24', string $pass = 'Lg5BJ8', string $url = 'https://partner.musbooking.com'){
     if(empty($login) && empty($pass) && empty($url)){return null;}
     $this->login = $login; $this->pass = $pass; $this->url = $url;
     
+    $this->curl = curl_init();
     curl_setopt_array($this->curl, [
         CURLOPT_URL => $this->url.'/api/auth/login', 
-        CURLOPT_RETURNTRANSFER => true, CURLOPT_POST => true, 
+        CURLOPT_RETURNTRANSFER => 1, CURLOPT_POST => 1, 
         CURLOPT_POSTFIELDS => http_build_query(['login' => $login, 'password' => $pass])
         ]);
-    $token = (is_json($tokenJson = curl_exec($this->curl))) ? json_decode($tokenJson, true) : null; 
+    $token = (is_json($tokenJson = curl_exec($this->curl))) ? json_decode($tokenJson, true) : null;
+    pa($tokenJson);
     if(!empty($token['token']) && !empty($token['key'])){$this->key = $token['key']; $this->token = $token['token'];}
 }
     
@@ -76,6 +78,31 @@ public function listOrders(string $room, string $dfrom = '', string $dto = ''){
     curl_setopt($this->curl, CURLOPT_SSL_VERIFYHOST, 0);
     //curl_setopt($this->curl, CURLOPT_HTTPHEADER, ['Authorization:Bearer '.$this->token]);
 return (is_json($json = curl_exec($this->curl))) ? json_decode($json, true) : $json;}
+
+public function syncAdd(string $room, string $dateTime, string $firstName, string $lastName, string $phone, string $email, int $hours = 1){
+    $this->setLogin();
+    if(empty($this->token) && empty($room)&& empty($dateTime)&& empty($firstName)&& empty($lastName)&& empty($phone)&& empty($email)){return null;}
+    $d = ['room' => $room, 'dateTime' => $dateTime, 'firstName' => $firstName, 'lastName' => $lastName, 'phone' => $phone, 'email' => $email];
+    
+    pa($d);
+    pa($this->token);
+    
+    curl_setopt($this->curl, CURLOPT_URL, $url = $this->url.'/api/orders/sync-add?' . http_build_query($d));
+    curl_setopt($this->curl, CURLOPT_RETURNTRANSFER, 1);
+    curl_setopt($this->curl, CURLOPT_FOLLOWLOCATION, 1);
+    curl_setopt($this->curl, CURLOPT_POST, 1);
+    curl_setopt($this->curl, CURLOPT_HEADER, 0);
+    curl_setopt($this->curl, CURLOPT_SSL_VERIFYPEER, 0);
+    curl_setopt($this->curl, CURLOPT_SSL_VERIFYHOST, 0);
+    curl_setopt($this->curl, CURLOPT_HTTPHEADER, ['Authorization:Bearer '.$this->token]);
+return (is_json($json = curl_exec($this->curl))) ? json_decode($json, true) : $json;    
+    /*
+    $dfrom = (empty($dfrom)) ? date('Y-m-d') : $dfrom;
+    $dto = (empty($dto)) ? date('Y-m-d', strtotime($dfrom)) : $dto;
+    //$date = date('Y-m-d H:i:s', strtotime(date('Y-m-d H:i:s') . ' -'.$agoMonth.' month'));
+
+
+     */ }
 
 public function listSyncOrders(int $agoMonth = 1){
     if(empty($this->token)){return null;}
