@@ -14,6 +14,7 @@ use Illuminate\Support\Facades\Route;
 |
 */
 
+Route::match(['get', 'post'], '/stoimost', ['uses' => 'App\Http\Controllers\HomeController@stoimost'])->name('stoimost');
 Route::middleware('auth:sanctum')->get('/user', function (Request $request) {
     return $request->user();
 });

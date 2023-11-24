@@ -30,11 +30,11 @@
         ***********************************-->
         <div class="nav-header">
             <div class="brand-logo">
-                <a href="/">
-                    <b class="logo-abbr"><img src="/assets/images/logo.png" alt=""> </b>
-                    <span class="logo-compact"><img src="/assets/images/logo-compact.png" alt=""></span>
+                <a href="{{ route('front.home', ['DOMAIN' => $domain]) }}">
+                    <b class="logo-abbr"><img src="/assets/admin/images/logo.png" alt=""> </b>
+                    <span class="logo-compact"><img src="/assets/admin/images/logo-compact.png" alt=""></span>
                     <span class="brand-title">
-                        <img src="/assets/images/logo-text.png" alt="">
+                        <img src="/assets/admin/images/logo-text.png" alt="">
                     </span>
                 </a>
             </div>
@@ -75,12 +75,13 @@
                         <ul aria-expanded="false">
 @foreach($Corpuses ?? [] as $k => $item)
 @if(!empty($item['muzid']) && !empty($item['name'])) 
-                            <li><a href="{{ route('front.admin', ['baseId' => $item['muzid']]) }}">{{ $item['name'] }}</a></li>
+                            <li><a href="{{ route('front.admin', ['baseId' => $item['muzid'], 'DOMAIN' => $domain]) }}">{{ $item['name'] }}</a></li>
 @endif
 @endforeach
                             <!-- <li><a href="./index-2.html">Home 2</a></li> -->
                         </ul>
                     </li>
+<?php /*                    
                     <li class="mega-menu mega-menu-sm">
                         <a class="has-arrow" href="javascript:void()" aria-expanded="false">
                             <i class="icon-globe-alt menu-icon"></i><span class="nav-text">Классы</span>
@@ -94,6 +95,7 @@
                             <!--li><a href="./layout-wide.html">Wide</a></li-->
                         </ul>
                     </li>
+*/?>                   
                 </ul>
             </div>
         </div>
@@ -111,7 +113,7 @@
                     
 @foreach($Corpuses ?? [] as $k => $item)
 @if(!empty($item['muzid']) && !empty($item['name'])) 
-                    <a href="{{ route('front.admin', ['baseId' => $item['muzid']]) }}" class="col-lg-3 col-sm-6">
+                    <a href="{{ route('front.admin', ['baseId' => $item['muzid'], 'DOMAIN' => $domain]) }}" class="col-lg-3 col-sm-6">
                         <div class="card gradient-{{ ($item['muzid'] == $curCorpuses['muzid']) ? 2 : 1 }}">
                             <div class="card-body">
                                 <h3 class="card-title text-white">{{ $item['name'] }}</h3>
@@ -144,7 +146,7 @@
                                             </thead>
                                             <tbody>
                                                 <tr>
-                                                    <td><img src="{{ $curCorpuses['img'] ?? '/assets/images/avatar/corpusses.png' }}" class=" rounded-circle mr-3" alt="">{{ $curCorpuses['name'] ?? '' }}</td>
+                                                    <td><img src="{{ $curCorpuses['img'] ?? '/assets/admin/images/avatar/corpusses.png' }}" class=" rounded-circle mr-3" alt="">{{ $curCorpuses['name'] ?? '' }}</td>
                                                     <td>
                                                         <span><input type="file" name="img" accept="image/png, image/jpeg"></span>
                                                         <input type="hidden" name="corpusid" value="{{ $curCorpuses['id'] }}">
@@ -181,7 +183,7 @@
 @if(!empty($item['muzid']) && !empty($item['name'])) 
                                                 <tr>
                                                     <form enctype="multipart/form-data" action="" method="post">
-                                                    <td><img src="{{ $item['img'] ?? '/assets/images/avatar/classes.png' }}" class=" rounded-circle mr-3" alt="">{{ $item['name'] ?? '' }}</td>
+                                                    <td><img src="{{ $item['img'] ?? '/assets/admin/images/avatar/classes.png' }}" class=" rounded-circle mr-3" alt="">{{ $item['name'] ?? '' }}</td>
                                                     <td><input type="number" name="price" value="{{ $item['price'] ?? '' }}"></td>
                                                     <td>
                                                         <span><input type="file" name="img" accept="image/png, image/jpeg"></span>

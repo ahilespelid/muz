@@ -17,14 +17,65 @@ use App\Models\Classes;
 use App\Models\Corpuses;
 use App\Models\Orders;
 use App\Models\Users;
-//use \Crest;
+use Validator;
 
 class HomeController extends Controller{
 
+ public function index(Request $request){
+    if($request->DOMAIN != self::DOMAIN){
+        //pa($request->toArray());exit;
+        $redirectWidget = (empty($request->addOrderNotification)) ? '/widget' : 
+                          (empty($request->classId) ? '/widget?addOrderNotification='.$request->addOrderNotification : '/widget?classId='.$request->classId.'&addOrderNotification='.$request->addOrderNotification);
+        //pa($redirectWidget); exit;
+        header('Location: '.$redirectWidget); exit;}
+    $data = $this->in($request);
+    //pa(); exit;
+    return (empty($data)) ? abort(404) : view('front.home', $data);
+}
+public function widget(Request $request){
+    $data = $this->in($request);
+    $data['periodWidget'] = [];
+    $period = new \DatePeriod(new \DateTime(date("Y-m-d H:i:s", $data['curTimestamp'])), new \DateInterval('P1D'), new \DateTime(date("Y-m-d H:i:s", $data['curTimestamp']+(86400*14))));
+    foreach($period as $per){
+        $data['periodWidget'][] = ['date' => $per, 'weekday' => $data['week'][$per->format('N')-1], 'day' => $per->format('d').' '.$data['monthShort'][$per->format('m')-1]];
+    }
+    //pa($data); //exit;if(!empty($request->addOrderNotification)){pa($request->addOrderNotification);exit;}
+    return (!empty($data)) ? view('front.widget', $data) : abort(404);
+}
+
+public static function getOrdersFromMuzOneDay(string $classid, string $date, array $curTimes):array{
+    $mb = new MuzController; $orders = array_fill_keys($curTimes,''); $ordersList = '';
+    if($ordersList = (empty($classid) && empty($date)) ? null : (!empty($order = $mb->listOrders($classid, date('Y-m-d', strtotime($date)))) ? $order : null) && is_array($ordersList)){
+        for($i=0,$c=count($ordersList); $i<$c; $i++){
+            $periodsOrder = new \DatePeriod(new \DateTime(date('H:i', strtotime($ordersList[$i]['dateFrom']))), new \DateInterval('PT1H'), new \DateTime(date('H:i', strtotime($ordersList[$i]['dateTo'])))); 
+            foreach($periodsOrder as $periodOrder){
+                $orders[$periodOrder->format('H:00')] = $ordersList[$i];
+            }
+    }}ksort($orders);
+return $orders;}    
+    
+public static function getOrdersFromOurOneDay(string $classesid, string $date, array $curTimes):?array{
+    $orders = $timeJob = array_fill_keys($curTimes,''); //pa($orders);
+    if(!empty($classesid) && !empty($date) && is_array($ordersList = Orders::where('classesid', $classesid)->whereDate('datefrom', $date)->get()->toArray()) && !empty($ordersList)){
+            for($i=0,$c=count($ordersList); $i<$c; $i++){
+                $periodsOrder = new \DatePeriod(new \DateTime(date('H:i', strtotime($ordersList[$i]['datefrom']))), new \DateInterval('PT1H'), new \DateTime(date('H:i', strtotime($ordersList[$i]['dateto'])))); 
+                foreach($periodsOrder as $periodOrder){
+                    $orders[$periodOrder->format('H:00')] = $ordersList[$i];
+                }
+    }}ksort($orders);//pa($orders);
+    
+    if(!empty($keyUnsetList = array_keys(array_diff_ukey($orders, $timeJob, function($a, $b){return ($a === $b) ? 0 : (($a > $b)? 1: -1);})))){
+        foreach($keyUnsetList as $thisKey){unset($orders[$thisKey]);}
+    }//pa($orders);
+return $orders;}    
+    
+    
 public function in(Request $request){
     $mb = new MuzController;
     $bx = new BtxController;
-    
+//pa($request->toArray());    
+///* / БЕРЁМ ДОМЕН ЧЕРЕЗ КОТОРЫЙ ЗАПРАШИВАЕТСЯ, ЧТОБЫ ОГРАНИЧИТЬ ВИДИМОСТЬ ВНЕ БИТРИКС ПРИЛОЖЕНИЯ ///* /
+    $domain = ($request->DOMAIN ?? self::DOMAIN);
 ///* / ЕСЛИ ПРИЛОЖЕНИЕ ОТКРЫТО ИЗ СДЕЛКИ БЕРЁМ ID СДЕЛКИ ///* /
     $OpenDealId = empty($request->dealId) ? (
             (!empty($request->PLACEMENT_OPTIONS) && !empty($dealJson = json_decode($request->PLACEMENT_OPTIONS, true))) ? 
@@ -33,7 +84,7 @@ public function in(Request $request){
 ///* / БЕРЁМ КОРПУСА ИЗ БАЗЫ ///* /
     if($Corpuses = (!empty($Corpuses = Corpuses::all()->toArray())) ? $Corpuses : null){
         $week = ['пн','вт','ср','чт','пт','сб','вс'];
-        $month = ['Январь', 'Февраль','Март','Апрель','Май','Июнь','Июль','Август','Сентябрь','Октябрь', 'Ноябрь','Декабрь'];
+        $month = ['Января', 'Февраля','Марта','Апреля','Мая','Июня','Июля','Августа','Сентября','Октября', 'Ноября','Декабря'];
         $monthShort = ['Янв', 'Фев','Мар','Апр','Май','Июн','Июл','Авг','Сен','Окт', 'Ноя','Дек'];
         $curBaseImg = ['https://partner.musbooking.com/res/bases/220315-1650-2.jpeg','https://partner.musbooking.com/res/bases/220314-2123-5.jpeg',];
 ///* / БЕРЁМ ИЗ ПАРАМЕТРОВ ВРЕМЕННУЮ МЕТКУ ЛИБО ФОРМИРУЕМ ЕЁ ИЗ ТЕКУЩЕГО ВРЕМЕНИ ///* /        
@@ -54,15 +105,16 @@ public function in(Request $request){
 ///* / ГЕНЕРИРУЕМ МАССИВ С РАБОЧИМ ВРЕМЕНЕМ КОРПУСА ///* /                
         if(!empty($curCorpuses['workfrom']) && !empty($curCorpuses['workto'])){
             $curCorpuses['workfrom'] = (0 === $curCorpuses['workfrom']) ? 1 : $curCorpuses['workfrom'];
-            $curCorpusesPeriod = new \DatePeriod(new \DateTime(gmdate('H:i', $curCorpuses['workfrom']*3600)), new \DateInterval('PT1H'), new \DateTime(gmdate('H:i', $curCorpuses['workto']*3600-61)));
-            $curTimes = []; foreach($curCorpusesPeriod as $period){$curTimes[] = $period->format('H:i');} $curTimes[] =  $curCorpuses['workto'].':00';
+            $curCorpusesPeriod = new \DatePeriod(new \DateTime(gmdate('H:i', $curCorpuses['workfrom']*3600)), new \DateInterval('PT1H'), new \DateTime(gmdate('H:i', $curCorpuses['workto']*3600-60)));
+            //pa($curCorpuses);
+            //pa($curCorpusesPeriod);
+            $curTimes = []; foreach($curCorpusesPeriod as $period){$curTimes[] = $period->format('H:i');} //$curTimes[] =  $curCorpuses['workto'].':00';
         }else{
             $curTimes = ['01:00', '02:00', '03:00', '04:00', '05:00', '06:00', '07:00', '08:00', '09:00', '10:00', '11:00', '12:00', '13:00', '14:00', '15:00', '16:00', '17:00', '18:00', '19:00', '20:00', '21:00', '22:00', '23:00', '24:00'];            
         }
 ///* / БЕРЁМ КЛАССЫ ДЛЯ КОРПУСА ИЗ БАЗЗЫ ///* /               
         if($Classes = (!empty($curCorpuses['muzid']) && !empty($Classes = Classes::where('corpusesid', $curCorpuses['muzid'])->get()->toArray())) ?  $Classes : null){
         //usort($clases, function($a, $b){return $a['order'] <=> $b['order'];});//pa($Corpuses); exit; pa($curCorpuses);
-
 ///* / ПЕРЕБИРАЕМ МАССИВ КЛАСОВ ИЗ БАЗЫ ///* /
             foreach($Classes as $Class){
  //* / ФОРМИРУЕМ МАССИВ ЗАКАЗОВ В КЛАССЕ ///* /
@@ -164,265 +216,225 @@ public function in(Request $request){
                         }
  */
     }}}}
+///* / БЕРЁМ КЛАСС ИЗ ПАРАМЕТРОВ ///* /
+//$curClass = (!empty($request->classId)) ($request->classId ?? $Classes[0]['muzid']);
+$curClass = (!empty($request->classId)) ? $Classes[(0 < $key = array_search($request->classId, array_column($Classes, 'id'))) ? $key : 0] : $Classes[0];
+//pa($curClass); exit;
+///* / БЕРЁМ УВЕДОМЛЕНИЯ ИЗ ПАРАМЕТРОВ ///* /
+$addOrderNotification = (empty($request->addOrderNotification)) ? [] : [$request->addOrderNotification];
 
-    
+///* / ОБРАБАТЫВАЕМ ДОБАВЛЕНИЕ СДЕЛКИ ///* /    
     if('order' == $request->add){
+///* / ОБРАБАТЫВАЕМ ДОМЕН, ЧТОБЫ ОГРАНИЧИТЬ ВИДИМОСТЬ ВНЕ БИТРИКС ПРИЛОЖЕНИЯ ///* /
+        //$request->merge(['DOMAIN' => self::DOMAIN]);
+///* / ПРИВОДИМ ДАТУ СО СТРАНИЦЫ К РАБОЧЕМУ ФОРМАТУ ///* /
         $arDate = explode(' ', trim($request->date));
         $day        = (!empty($arDate[0])) ? $arDate[0] : '';
         $month      = (0 <= ($keyMonth = array_search($arDate[1], $month))) ? $keyMonth+1 : '';
         $year       = (!empty($arDate[2])) ? $arDate[2] : '';
         $date       = $year.'-'.$month.'-'.$day;
+///* / ОБРАБАТЫВАЕМ ПРИШЕДШИЕ С БРАУЗЕРА ПАРАМЕТРЫ, ФОРМИРУЕМ УВЕДОМЛЕНИЯ ///* /        
+        $addOrderClass = Classes::where(['muzid' => $request->classid])->first()->toArray();
+        //$addOrderClass = $Classes[$addOrderClassKey = (0 <= $keyClass = array_search($request->classid, array_column($Classes, 'muzid'))) ? $keyClass : ''];
+        //pa($addOrderClassKey); pa($request->classid);  pa($Classes); pa($addOrderClass); exit;
         
-        foreach(json_decode($request->times, true) as $arDatetime){if($d = is_date($date.' '.$arDatetime)){$Datetime[] = (array) $d;}}
+        if(empty($addOrderClass['muzid'])){                             $addOrderNotification []='Нет доступа к классу';}
+        if(empty($request->date)){                                      $addOrderNotification []= 'Не выбрана дата';}
+        if(empty($timesJson = json_decode($request->times, true))){     $addOrderNotification []='Не выбрано время';}
+        if(empty($request->name)){                                      $addOrderNotification []='Не введено поле имя';}
+        if(empty($request->sename)){                                    $addOrderNotification []='Не введено поле фамилия';}
+        if(empty($request->phone)){                                     $addOrderNotification []='Не введено поле телефон';}
+        //if(empty($request->email)){                 $addOrderNotification []='Не введено поле email';}
+        
+        if(!$ph = $this->is_phone(($request->phone ?? ''))){$addOrderNotification []='Не валидный номер телефона';}
+        //if(!$em = $this->is_email(($request->email ?? ''))){$addOrderNotification []='Не валидный email';}
+        
+        $phone = ($ph ?? $request->phone);
+        $email = ($em ?? $request->email);
+        $fio = trim($request->name.' '.$request->sename);
+        //pa($request->toArray()); exit;
+        //pa($addOrderClass); exit;
+        //pa(self::MUZ_ID_BX.' '.self::DATE_FROM_BX.' '.self::DATE_TO_BX); exit;
+        
+        if(empty($addOrderNotification)){
+///* / ФОРМИРУЕМ МАССИВ СО ВРЕМЕНЕМ ЗАКАЗОВ И СОРТИРУЕМ ПО ЧАСАМ ///* /        
+            foreach($timesJson as $arDatetime){if($d = is_date($date.' '.$arDatetime)){$datetimes[$d->format('H')] = $d;}}
+            ksort($datetimes); //$datetimes = array_values($datetimes);
+///* / ВЫСЧИТЫВАЕМ ПОСЛЕДОВАТЕЛЬНЫЕ ЧАСЫ, ДЕЛИМ НА ЗАКАЗЫ ДЛЯ МУЗБУКИНГА ///* /        
+            $datetimesKeys = array_keys($datetimes); $datetimesKeysMin = min($datetimesKeys); $datetimesKeysMax = max($datetimesKeys);
+            $orderTimes = array_fill($datetimesKeysMin, $datetimesKeysMax-$datetimesKeysMin+1,''); 
+            array_walk($datetimes, function ($v, $k) use(&$orderTimes){$orderTimes[intval($k)] = $v;});
+            //pa($orderTimes);
+///* / РАЗЛОЖИЛИ ЧАСОВОЙ МАССИВ НА МАССИВ ЗАКАЗОВ С ЦЕПОЧКАМИ ЧАСОВ ///* /
+            $l = 0; foreach($orderTimes as $datetime){
+                if(empty($datetime)){$l++; continue;}
+                $browserOrders[$l][] = $datetime;
+            }$browserOrders = array_values($browserOrders); //pa($browserOrder);exit;
+                         
+///*/ ПРОВЕРЯЕМ ЕСТЬ ЛИ ПОЛЬЗОВАТЕЛЬ В БИТРИКС ПО ТЕЛЕФОНУ, ЕСЛИ НЕТ ///*/
+            if(empty($bxContactIdCheck = $bx->bx24->getContactsByPhone($phone))){
+                //list($lastname, $firstname) = explode(' ', $fio);
+///*/ СОЗДАЁМ ПОЛЬЗОВАТЕЛЯ В БИТРИКС ///*/                            
+                $bxContactId = $bx->bx24->addContact([
+                    'NAME'      => $request->name,
+                    'LAST_NAME' => $request->sename,
+                    'PHONE'     => array((object)['VALUE' => $phone, 'VALUE_TYPE' => 'WORK']),
+                    'EMAIL'     => array((object)['VALUE' => $email, 'VALUE_TYPE' => 'WORK']),
+                ]);
+///*/ ЕСЛИ ПОЛЬЗОВАТЕЛЬ БИТРИКС СУЩЕСТВУЕТ БЕРЁМ ЕГО ID ///*/                            
+            }else{$bxContactId = $bxContactIdCheck[0]['ID'];}
+///*/ ВЫБИРАЕМ ИЛИ СОЗДАЁМ ЕСЛИ НЕТ ПОЛЬЗОВАТЕЛЯ С ТАКИМ ТЕЛЕФОНО И ИМЕНЕМ В НАШЕЙ БАЗЕ ///*/
+            $newUser = Users::firstOrCreate(['phone' => $phone, 'fio' => $fio]);
+            $newUser->phone = $phone;
+            $newUser->fio = $fio;
+            $newUser->email = $email;
+            //$newUser->muzid = $bxContactId;
+            $newUser->bitrixid = $bxContactId;
+            $newUser->save();
+///*/ СОЗДАЁМ ЗАКАЗЫ ///*/
+            $userId = $newUser->id;
+            //pa($browserOrders);
+            //pa($browserOrders[0][0]->format('c'));
+            foreach($browserOrders as $k => $browserOrder){
+                $hoursCount = intval(empty($m = max(array_keys($browserOrder))) ? count($browserOrder) : $m+1); //pa($hoursCount);
+                $hoursStart = $browserOrder[0]->setTimezone(new \DateTimeZone('UTC'))->modify("+3 hours")->format('c');
+                $retMuz[] = $newMuzOrder = $mb->syncAdd($addOrderClass['muzid'], $hoursStart, $request->name, $request->sename, $request->phone, $request->email, $hoursCount);
+                
+                //pa($retMuz);
+                if(1 == $newMuzOrder['status'] && !empty($newMuzOrder['id']) && !empty($newMuzOrder['dateFrom']) && !empty($newMuzOrder['dateTo']) && 
+                   !empty($addOrderClass['muzid']) && !empty($userId)){
+                    $newMuzOrderDateFrom = new \DateTime($newMuzOrder['dateFrom']); $newMuzOrderDateFrom->setTimezone(new \DateTimeZone('Europe/Moscow'))->modify("-3 hours"); //Europe/Moscow
+                    $newMuzOrderDateTo   = new \DateTime($newMuzOrder['dateTo']);   $newMuzOrderDateTo->setTimezone(new \DateTimeZone('Europe/Moscow'))->modify("-3 hours");   //Europe/Moscow
+                    
+                    //$newMuzOrderDateFrom = new \DateTime($newMuzOrder['dateFrom']); $newMuzOrderDateFrom->setTimezone(new \DateTimeZone('UTC'))->modify("+3 hours"); //UTC
+                    //$newMuzOrderDateTo   = new \DateTime($newMuzOrder['dateTo']);   $newMuzOrderDateTo->setTimezone(new \DateTimeZone('UTC'))->modify("+3 hours");   //UTC
+                    //pa($newMuzOrderDateFrom->format('Y-m-d H:i:s'));
+                    //pa($newMuzOrderDateTo->format('Y-m-d H:i:s'));exit;
+                    
+                    $newOrder = Orders::firstOrCreate(['muzid' => $newMuzOrder['id']]);
+                    $newOrder->muzid = $newMuzOrder['id']; 
+                    $newOrder->classesid = $addOrderClass['id'] ?? '';
+                    $newOrder->usersid = $userId;	
+                    //$newOrder->deal = '';
+                    $newOrder->datefrom = $newMuzOrderDateFrom->format('Y-m-d H:i:s');
+                    $newOrder->dateto = $newMuzOrderDateTo->format('Y-m-d H:i:s');
+                    //$newOrder->amountpeople =  null;
+                    $newOrder->comment = $request->comment ?? null;                    
+                    $newOrder->save();
+                    //pa($newOrder);
+///*/ ВЫБИРАЕМ СДЕЛКУ ИЗ БИТРИКСА ЕСЛИ ЕСТЬ ///*/
+                    try{$deal = $bx->bx24->getDeal($newOrder->deal, [\App\Bitrix24\Bitrix24API::$WITH_PRODUCTS, \App\Bitrix24\Bitrix24API::$WITH_CONTACTS]);
+                        $dealId = (empty($deal['ID'])) ? 'ID is not defined or invalid' : $deal['ID'];
+                    }catch(\Exception $e){
+                        $dealId = str_replace(['"', '}','{', '.', ','], '', (explode('.', explode(':', $e->getMessage())[11])[0]));
+                    }//pa($dealId);exit;
+///*/ ФОРМИРУЕМ КОЛИЧЕСТВО ТОВАРОВ ДЛЯ БИТРИКС СДЕЛКИ ///*/                       
+                    $quantity = $hoursCount;
+///*/ ЕСЛИ НЕТ СДЕЛКИ В БИТРИКСЕ, СОЗДАЁМ СДЕЛКУ ///*/
+                    if('ID is not defined or invalid' == $dealId){
+                        $title = ((!empty($addOrderClass['name'])) ? '('.$addOrderClass['name'].') ' : '').
+                                 ((!empty($newUser->fio)) ? $newUser->fio.' ' : '').
+                                 ((!empty($newOrder->comment)) ? $newOrder->comment : '');
+                        $title = (!empty($title)) ? $title : 'Безымянная - '.time();
 
-        //$addOrderNotification = [];
-        $addOrderClass = $Classes[(0 <= $keyClass = array_search($request->classid, array_column($Classes, 'muzid'))) ? $keyClass : ''];
-        if(empty($addOrderClass['muzid'])){      $addOrderNotification []='Нет доступа к классу';}
-        if(empty($request->date)){               $addOrderNotification []= 'Не выбрана дата';}
-        if(empty($request->times)){              $addOrderNotification []='Не выбрано время';}
-        if(empty($request->name)){               $addOrderNotification []='Не введено поле имя';}
-        if(empty($request->sename)){             $addOrderNotification []='Не введено поле фамилия';}
-        if(empty($request->phone)){              $addOrderNotification []='Не введено поле телефон';}
-        if(empty($request->email)){              $addOrderNotification []='Не введено поле email';}
-        
-        //pa($addOrderNotification);
-        
-        if(empty($addOrderNotification) && !empty($Datetime)){
-            /*
-            $validated = $request->validate([
-                'title' => 'required|unique:posts|max:255',
-                'body' => 'required',
-            ]);
-            */
-            $mb->__construct();
-            foreach ($Datetime as $k => $v){
-                pa($mb->syncAdd($addOrderClass['muzid'], $v['date'], $request->name, $request->sename, $request->phone,$request->email));
+                        $bx->bx24->setDealProductRows($dealId = $bx->bx24->addDeal([
+                            'TITLE' => $title, 
+                            'CONTACT_ID' => $bxContactId, 
+                            self::MUZ_ID_BX => $newOrder->muzid, 
+                            self::DATE_FROM_BX => $newOrder->datefrom, 
+                            self::DATE_TO_BX => $newOrder->dateto, 
+                        ]), [[ 'PRODUCT_ID' => $addOrderClass['product'], 'PRICE' => $addOrderClass['price'], 'QUANTITY' => $quantity ]]);
+                    }
+                    $newOrder->deal = $dealId;
+                    $newOrder->save();
+                    $retOur[] = $newOrder->toArray();
+                    //pa($dealId); pa($clasesDb[$classId]['product']);exit;
+                }
+
+        $addOrderNotification[] = (!empty($newMuzOrder['error'])) ? 
+                ($addOrderClass['name'].' : '.(new \DateTime($newMuzOrder['dateFrom']))->format('Y-m-d H:i').' - '.$newMuzOrder['error'].PHP_EOL) : 
+                ((!empty($retOur)) ? $addOrderClass['name'].' : '.(new \DateTime($newMuzOrder['dateFrom']))->format('Y-m-d H:i').' - '.(new \DateTime($newMuzOrder['dateTo']))->format('H:i').' '.'Оформлено бронирование на '.$newUser->fio.PHP_EOL : '');
+                
+            
             }
+            $newUser->muzid = $newMuzOrder['clientId'] ?? null;
+            $newUser->save();
+            //pa($retMuz);
+            //pa($retOur); 
+            //exit;
+        }
+        //
+        //
+        /*
+        if(!empty($dateIn = ($request->date ?? ''))){
+            $arrDateIn = explode(' ', $dateIn);
+            $keyMonth = array_flip($month);
+            pa($dayIn = ($arrDateIn[0] ?? ''));
+            pa($monthIn = ($keyMonth[trim($arrDateIn[1] ?? '')]) ?? '');
+            pa($yearIn = ($arrDateIn[2] ?? ''));
             
         }
-        
-    }
+        */
 
+        $url = route('front.home', [
+            'baseId' => $addOrderClass['corpusesid'], 
+            'classId' => ($addOrderClass['id'] ?? ''), 
+            'dateIn' => ($date ?? ''), 
+            'addOrderNotification' => implode('PHP_EOL',str_replace(["\r", "\n"], '', $addOrderNotification)), 
+            'time' => time(),
+            'DOMAIN' => $domain]);
+        //pa($request->toArray());exit;
+        /*
+        pa($addOrderNotification);
+        pa($request->toArray());
+        pa($url); 
+        $request->toArray()); exit;
+        echo date('h:i:s') . "</br>";
+        sleep(10);
+        echo date('h:i:s') . "</br>";
+        
+        pa(($retMuz ?? []));
+        exit;
+        */
+        header('Location: '.$url); exit;
+        }
 ///*/-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------///*/
 
 ///*/ Вывод ///*/
         $data = get_defined_vars(); unset($data['request'], $data['bx'], $data['mb']); $data = array_keys($data);
-        return view('front.home', compact($data));
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-        
-
+        return compact($data);
+        //return ($domain == self::DOMAIN) ? view('front.home', compact($data)) : abort(404);
     }else{abort(500);}
     
 }
+    
+public function stoimost(Request $request){
+    if(!empty($request->classid) && $validator = Validator::make($request->all(), ['classid' => 'required|min:36', 'times' => 'required'])){
+        if($validator->passes() && $Class = (!empty($request->classid) && !empty($Class = Classes::where('muzid', $request->classid)->first()->toArray())) ?  $Class : null){
+            $countTimes = count(explode(',', $request->times));
+            return response()->json(['result' => $Class['price']*$countTimes ?? null]);
+}}}
 
-
-public function index(Request $request){
-    $mb = new MuzController; //$api->setLogin(); 
-    $bx = new BtxController; 
-
-    if('stoimost' == $request->api){$mb->stoimost($request);exit;}
-        
-    $dealId = empty($request->dealId) ? (
-            (!empty($request->PLACEMENT_OPTIONS) && !empty($dealJson = json_decode($request->PLACEMENT_OPTIONS, true))) ? 
-                (empty($dealJson['ID']) ? null : $dealJson['ID']) : null
-        ) : $request->dealId;
-
-    if($bases = (is_array($bases = $mb->listBases())) ? $bases : null){
-        //
-        /*/ Синхранизация корпусов pa($bases); exit; ///
-        foreach($bases as $base){
-            $newBase = Corpuses::firstOrCreate(['muzid' => $base['id']]);
-            $newBase->muzid = $base['id'];
-            $newBase->name = $base['value'];
-            $newBase->type = $base['sphere'];
-            $newBase->save();
+public function reset(Request $request){
+    if(empty($request->muzid)){return null;}
+    $mb = new MuzController;
+    $bx = new BtxController;
+    
+    $muz = (array) $mb->syncUpdate($request->muzid);
+    $our = Orders::where('muzid', $request->muzid)->first();
+    if(empty($muz['errors']) && !empty($our->id)){
+        $our->deal = ($our->deal ?? null);
+        $muzState = $our->muzid;
+        try{
+            $bxSate = (!empty($our->deal)) ? $bx->bx24->deleteDeal($our->deal) : null;
+            $bxSate = ($bxSate) ? $our->deal : null;
+        } catch(\Exception $e){
+            $bxSate = null;
         }
-        */
-        $week = ['пн','вт','ср','чт','пт','сб','вс'];
-        $month = ['Январь', 'Февраль','Март','Апрель','Май','Июнь','Июль','Август','Сентябрь','Октябрь', 'Ноябрь','Декабрь'];
-        $monthShort = ['Янв', 'Фев','Мар','Апр','Май','Июн','Июл','Авг','Сен','Окт', 'Ноя','Дек'];
-        $curBaseImg = ['https://partner.musbooking.com/res/bases/220315-1650-2.jpeg','https://partner.musbooking.com/res/bases/220314-2123-5.jpeg',];
-        
-        $curTimestamp           = (empty($_GET['dateIn'])) ? time() : strtotime($_GET['dateIn']); 
-        $curDate['day']         = date('d', $curTimestamp);
-        $curDate['month']       = date('m', $curTimestamp);
-        $curDate['monthRus']    = $month[$curDate['month']-1];
-        $curDate['year']        = date('Y', $curTimestamp);
-        $curDate['week']        = $week[date('N', $curTimestamp)-1];
-        $curDate['calendar']    = $curDate['week'].', '.$monthShort[$curDate['month']-1].' '.$curDate['day'];
-        $curDate['rus']         = $curDate['day'].' '.$curDate['monthRus'].' '.$curDate['year'];
-        $curDate['timestamp']   = strtotime($curDate['year'].'-'.$curDate['month'].'-'.$curDate['day']);
-        
-        $curBaseKey = (!empty($request->baseId) && !empty($bases)) ? array_search($request->baseId, array_column($bases, 'id')) : null;
-        $curBase = (empty($curBaseKey)) ? ((!empty($bases[0]['value']) && !empty($bases[0]['sphere'])) ? $bases[0] : null) : $bases[$curBaseKey]; 
-        $curBase['workHours'][0]['from'] = (0 === $curBase['workHours'][0]['from']) ? 1 : $curBase['workHours'][0]['from'];
-        //pa($curBase['id']); //exit;
-        $clases = (!empty($curBase['id'])) ? array_filter($mb->listClases(), function($el) use($curBase){return $el['baseId'] === $curBase['id'];}) : null;
-        usort($clases, function($a, $b){return $a['order'] <=> $b['order'];});
-        //pa($clases); exit;
-        if(!empty($curBase['workHours'][0]['from']) && !empty($curBase['workHours'][0]['to'])){
-            $period = new \DatePeriod(new \DateTime(gmdate('H:i', $curBase['workHours'][0]['from']*3600)), new \DateInterval('PT1H'), new \DateTime(gmdate('H:i', $curBase['workHours'][0]['to']*3600-61)));
-            $curTimes = []; foreach($period as $value){$curTimes[] = $value->format('H:i');} $curTimes[] =  $curBase['workHours'][0]['to'].':00';
-        }else{
-            $curTimes = ['01:00', '02:00', '03:00', '04:00', '05:00', '06:00', '07:00', '08:00', '09:00', '10:00', '11:00', '12:00', '13:00', '14:00', '15:00', '16:00', '17:00', '18:00', '19:00', '20:00', '21:00', '22:00', '23:00', '24:00'];            
-        }
- ///*/ ПЕРЕБИРАЕМ МАССИВ КЛАСОВ ИЗ МУЗБУКИНГА ///* /
-        foreach($clases as $clase){
- //* / ФОРМИРУЕМ МАССИВ ЗАКАЗОВ В КЛАССЕ ///* /
-            $orders[$clase['id']] = $mb->listOrders($clase['id'], date('Y-m-d', $curDate['timestamp']));
- 
-///* / СОЗДАЁМ ИЛИ ВЫБИРАЕМ КЛАСС ИЗ НАШЕЙ БАЗЫ ПО ID МУЗБУКИНГА ///* /
-            //pa($clase); exit;
-            $prices = include(resource_path('arrays/prices.php'));
-            
-            $newClass = Classes::firstOrCreate(['muzid' => $clase['id']]);
-            $newClass->name = $clase['value'];
-            $newClass->muzid = $clase['id'];
-            $newClass->corpusesid = $clase['baseId'];
-            $newClass->orders = $clase['order'];
-            $newClass->save();
-            //pa($newClass->product); exit;
-///* / ВЫБИРАЕМ ТОВАР ИЗ БИТРИКСА ЕСЛИ ЕСТЬ ///* /         
-            try{$bxProductId = $bx->bx24->getProduct($newClass->product)['ID'];}catch(\Exception $e){
-                $bxProductId = (str_replace(['"', '}','{', '.', ','], '', explode(':', $e->getMessage())[6]));
-            }
-///* / ВЫБИРАЕМ МАССИВ ЦЕННИКОВ ИЗ РЕСУРСОВ ///* /
-            $curPrice = $prices[(0 < $key = array_search($newClass->muzid, array_column($prices, 'muzid'))) ? $key : 0]['price'];            
-///* / ЕСЛИ НЕТ ТОВАРА В БИТРИКСЕ, СОЗДАЁМ ТОВАР С ЦЕНОЙ КЛАССА ///* / 
-            if('Product is not found' == $bxProductId || 'ID is not defined or invalid' == $bxProductId){
-                $bxProductId = $newClass->product = $bx->bx24->addProduct([
-                    'NAME' => $newClass->name, 
-                    'CURRENCY_ID' => 'RUB', 
-                    'PRICE' => $curPrice,
-                ]);
-            }
-            $newClass->save();           
-        } $rooms = array_fill_keys(array_keys($orders), '');
- /**/
-        //pa($orders['a9b09c01-0057-41dd-a66b-a8c4ec5e4097']); exit; 
-        //pa($orders); exit;
-        $curOrders = array_fill_keys($curTimes, $rooms);
-        $classes = Classes::all();
-        //pa($classes->toArray());exit;
-/**/        
-        foreach($orders as $id => $ordersList){
-///* / ВЫБИРАЕМ ID КЛАССА ИЗ НАШЕЙ БД ///* /
-            $classMuzid = (0 <= $key = array_search($id, array_column($clases, 'id'))) ? $clases[$key]['id'] : null;
-            //$classId = ($classMuzid) ? Classes::where('muzid', '=', $classMuzid)->get('id')->toArray()[0]['id'] : null;            
-            $classId = array_search($classMuzid, array_column($classes->toArray(), 'muzid'));
-            
-            if(!empty($ordersList)){ //$cl = Classes::where('muzid', '=', $id); pa($cl, 5); exit;//pa($classId); exit; //pa($ordersList[$i]); exit;
- ///* / ПЕРЕБИРАЕМ ЗАКАЗЫ ИЗ МУЗБУКИНГА ///* /
-                for($i=0,$c=count($ordersList); $i<$c; $i++){
-///* / ЕСЛИ В ЗАКАЗЕ ЕСТЬ ИМЯ И ТЕЛЕФОН ///* /
-                    if(!empty($phone = $ordersList[$i]['phone']) && !empty($fio = $ordersList[$i]['fio'])){
-///* / ПРОВЕРЯЕМ ЕСТЬ ЛИ ПОЛЬЗОВАТЕЛЬ В БИТРИКС ПО ТЕЛЕФОНУ, ЕСЛИ НЕТ ///* /
-                        if(empty($bxContactIdCheck = $bx->bx24->getContactsByPhone($phone))){
-                            list($lastname, $firstname) = explode(' ', trim($fio));
-///* / СОЗДАЁМ ПОЛЬЗОВАТЕЛЯ В БИТРИКС ///* /                            
-                            $bxContactId = $bx->bx24->addContact([
-                                'NAME'      => $firstname,
-                                'LAST_NAME' => $lastname,
-                                'PHONE'     => array((object)['VALUE' => $phone, 'VALUE_TYPE' => 'WORK']),
-                                'EMAIL'     => array((object)['VALUE' => $email]),
-                                //'COMPANY_ID'  => 332,
-                                //'SECOND_NAME' => 'Васильевич',
-                            ]);
-///* / ЕСЛИ ПОЛЬЗОВАТЕЛЬ БИТРИКС СУЩЕСТВУЕТ БЕРЁМ ЕГО ID ///* /                            
-                        }else{$bxContactId = $bxContactIdCheck[0]['ID'];}
-                    }else{
-///* / ЕСЛИ В ЗАКАЗЕ НЕТ ИМЯ И ТЕЛЕФОН ///* /
-                        $importContact = $bx->bx24->getContact(7);
-                        $phone = (empty($importContact['PHONE'][0]['VALUE'])) ? null : $importContact['PHONE'][0]['VALUE'];
-                        $email = (empty($importContact['EMAIL'][0]['VALUE'])) ? null : $importContact['EMAIL'][0]['VALUE'];
-                        $fio = $importContact['NAME'];
-                        $bxContactId = $importContact['ID'];
-                    }
-                    $email = (empty($ordersList[$i]['email'])) ? '' : $ordersList[$i]['email'];
- ///* / ВЫБИРАЕМ ИЛИ СОЗДАЁМ ЕСЛИ НЕТ ПОЛЬЗОВАТЕЛЯ С ТАКИМ ТЕЛЕФОНО И ИМЕНЕМ В НАШЕЙ БАЗЕ ///* /
-                    $newUser = Users::firstOrCreate(['phone' => $phone, 'fio' => $fio]);
-                    $newUser->phone = $phone;
-                    $newUser->fio = $fio;
-                    $newUser->email = $email;
-                    $newUser->bitrixid = $bxContactId;
-                    $newUser->save();
-                    
-                    $userId = $newUser->id;
-                    
-                    $newOrder = Orders::firstOrCreate(['muzid' => $base['id']]);
-                    
-                    //pa($ordersList[$i]);
-                    //if(10 == $i) exit;
-                    
-                    $newOrder->muzid = $ordersList[$i]['id']; 
-                    $newOrder->classesid = $classId;
-                    $newOrder->usersid = $userId;	
-                    //$newOrder->deal = '';
-                    $newOrder->datefrom = $ordersList[$i]['dateFrom'];
-                    $newOrder->dateto = $ordersList[$i]['dateTo'];
-                    //$newOrder->amountpeople = '';
-                    $newOrder->comment = $ordersList[$i]['comment'];                    
-                    $newOrder->save();
-                    
-///* / ВЫБИРАЕМ СДЕЛКУ ИЗ БИТРИКСА ЕСЛИ ЕСТЬ ///* /
-                    try{$dealId = $bx->bx24->getDeal($newOrder->deal, [\App\Bitrix24\Bitrix24API::$WITH_PRODUCTS, \App\Bitrix24\Bitrix24API::$WITH_CONTACTS]);}catch(\Exception $e){
-                        $dealId = str_replace(['"', '}','{', '.', ','], '', (explode('.', explode(':', $e->getMessage())[11])[0]));
-                    }
-///* / ЕСЛИ НЕТ СДЕЛКИ В БИТРИКСЕ, СОЗДАЁМ СДЕЛКУ ///* /
-                    //$bxProductId = Classes::where();
-                    if('ID is not defined or invalid' == $dealId){
-                        $dealId = $bx->bx24->addDeal([
-                            'TITLE' => $newOrder->muzid, 
-                            'CONTACT_ID' => $bxContactId, 
-                            'PRODUCTS' => array((object)["PRODUCT_ID" => $classes[$classId]['product']]),
-                        ]);
-                    }
+        $ourState = $our->id;
+        $ourState = ($our->delete()) ? $ourState : null;
+    }else{$muzState = null;}
+return response()->json(['muz' => (string)($muzState ?? null), 'bx' => (string)($bxSate ?? null) , 'our' => (string)($ourState ?? null)]);}
 
-                    //pa($classes[$classId]['product']);
-                    //pa($dealId); exit;
-
-                $periodsOrder = new \DatePeriod(new \DateTime(date('H:i', strtotime($ordersList[$i]['dateFrom']))), new \DateInterval('PT1H'), new \DateTime(date('H:i', strtotime($ordersList[$i]['dateTo'])))); 
-                foreach($periodsOrder as $periodOrder){
-                    //$curOrders[$periodOrder->format('H:00')][$id] = $ordersList[$i];
-                    //unset(); 
-                    $curOrders[$periodOrder->format('H:00')][$id] = $ordersList[$i]; //array_merge($rooms, [$id => $ordersList[$i]]);
-                }
-    }}}
-    //pa($curOrders);
-    //$curOrders = (empty($curOrders)) ? array_fill_keys($curTimes, $rooms) : array_merge(array_fill_keys($curTimes, $rooms),$curOrders);
-    //pa($curOrders); exit;
-    //
-    /*/
-    $deal = (!empty($deal_id) && $deal = CRest::call('crm.deal.get', ['ID' => $deal_id])) ? 
-        (isset($deal['result']) ? $deal['result'] : ['ID' => $deal['error_description']]) : $deal;
-    $deal_into_id = (empty($deal['UF_CRM_1683462809'])) ? null : $deal['UF_CRM_1683462809'];
-///*/
- 
-///*/ Вывод ///*/
-    $data = get_defined_vars(); unset($data['request'], $data['mb'], $data['bx']); $data = array_keys($data);
-return view('front.home', compact($data));}else{
-pa('Dont` connection internet.');}}             
 
 }

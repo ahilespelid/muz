@@ -3,6 +3,7 @@ ini_set('memory_limit', '-1');
 set_time_limit(0);
 setlocale(LC_ALL, 'ru_RU.utf8');
 date_default_timezone_set( 'Europe/Moscow' );
+session_start();
 
 use Illuminate\Http\Request;
 
@@ -15,12 +16,6 @@ use App\Models\Orders;
 use App\Models\Users;
 
 class SyncController extends Controller{
-const PHONE_CODE = '+7', 
-      DEFAULT_CONTACT = 199,
-      AMOUT_PEOPLE_ID = 'fe7f09ae-14ac-4071-9d99-e278cef61ea5',
-      MUZ_ID_BX = 'UF_CRM_1697011461644',    
-      DATE_FROM_BX = 'UF_CRM_1697156890471',    
-      DATE_TO_BX = 'UF_CRM_1697156942243';    
 public function index(Request $request){
     $mb = new MuzController; //$api->setLogin(); 
     $bx = new BtxController;
@@ -96,7 +91,7 @@ public function index(Request $request){
             } 
         }
 ///*/-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------///*/
-//pa($orders);        
+pa($orders);        
 ///*/ ЕСЛИ В КЛАССАХ ЕСТЬ ЗАКАЗЫ ///*/        
         if(is_array($orders) && !empty($orders)){
 ///*/ фОРМИРУЕМ МАССИВ ТЕКУЩИХ ДЛЯ КЛАССОВ ЗАКАЗОВ ///*/
@@ -105,6 +100,30 @@ public function index(Request $request){
             $clasesDb = Classes::all()->toArray(); //pa($clasesDb);exit;
 ///*/ ПРОХОДИМСЯ ЦИКЛОМ ПО ЗАКАЗАМ КЛАССОВ ИЗ ТЕКУЩЕГО КОРПУСА ///*/
             foreach($orders as $id => $ordersList){
+///*/ ВЫСЧИТЫВАЕМ ВРЕМЕНА БРАНИРОВАНИЯ ДЛЯ КЛАССОВ ИЗ МУЗБУКИНГА ///*/
+                $saveDateFroms = array_column($ordersList,'dateFrom');
+                $saveDateTos = array_column($ordersList,'dateTo');
+                if(!empty($saveDelClase = Classes::where('muzid',$id)->first()->toArray())){
+                    $k_first = array_key_first($saveDateFroms);
+                    foreach($saveDateFroms as $k => $saveDateFrom){
+                        if($k === $k_first){
+                            $saveDay = ($day = is_date($saveDateFrom)) ? $day->format('Y-m-d') : null; 
+                        }
+                    $timSaveDateFrom = is_date($saveDateFrom);
+                    $timSaveDateTo = is_date($saveDateTos[$k]);
+                    if($timSaveDateFrom && $timSaveDateTo){
+                    $SaveDateFrom[] = $timSaveDateFrom->format('Y-m-d H:i:s');
+                    $SaveDateTo[] = $timSaveDateTo->format('Y-m-d H:i:s');
+                }}
+                    //pa(Orders::whereIn('datefrom', $SaveDateFrom)->get()->toArray()); //whereNotIn()->delete()
+                    //pa(Orders::whereIn('dateto', $SaveDateTo)->get()->toArray()); //whereNotIn()->delete()
+                    
+                }//pa($saveDateFrom); exit;
+///*/ ВЫСЧИТЫВАЕМ РАЗНИЦУ ПО ВРЕМЕНИ БРОНИРОВАНИЯ ИЗ МУЗБУКИНГА С НАШЕЙ БАЗОЙ И УДАЛЯЕМ ///*/
+                if(isset($SaveDateFrom) && isset($SaveDateTo) && !empty($saveDateFrom = implode(', ', $SaveDateFrom)) && !empty($saveDateTo = implode(', ', $SaveDateTo))){
+                    Orders::where('classesid', $saveDelClase['id'])->whereDate('datefrom', $saveDay)->whereNotIn('datefrom', $SaveDateFrom)->whereNotIn('dateto', $SaveDateTo)->delete();
+                }
+                  
 ///*/ ВЫБИРАЕМ ID КЛАССА ИЗ МУЗБУКИНГА И ИЩЕМ ТАКОЙ ID В НАШЕЙ БД, ЕСЛИ НЕ НАХОДИМ ПРОПУСКАЕМ ИТЕРАЦИЮ ЗАКАЗОВ ///*/
                 if('' === $classMuzid = ((0 <= $keyClass = array_search($id, array_column($clases, 'id'))) ? $clases[$keyClass]['id'] : '')){continue;}           
                 if('' === ((0 <= $classId = array_search($classMuzid, array_column($clasesDb, 'muzid'))) ? $classId : '')){continue;}
@@ -115,23 +134,29 @@ public function index(Request $request){
                     for($i=0,$c=count($ordersList); $i<$c; $i++){//pa($ordersList[$i]['dateFrom']);exit;
 ///*/ ЕСЛИ В ЗАКАЗЕ ЕСТЬ ИМЯ И ТЕЛЕФОН ///*/
                         if(!empty($phone = $ordersList[$i]['phone']) && !empty($fio = $ordersList[$i]['fio'])){
-                            $phone = self::PHONE_CODE.' '.$phone;                           
+                            $phone = self::PHONE_CODE.' '.$phone;
+                            $email = (!empty($ordersList[$i]['email'])) ? $ordersList[$i]['phone'] : '';
 ///*/ ПРОВЕРЯЕМ ЕСТЬ ЛИ ПОЛЬЗОВАТЕЛЬ В БИТРИКС ПО ТЕЛЕФОНУ, ЕСЛИ НЕТ ///*/
-                            if(empty($bxContactIdCheck = $bx->bx24->getContactsByPhone($phone))){
-                                list($lastname, $firstname) = explode(' ', trim($fio));
-///*/ СОЗДАЁМ ПОЛЬЗОВАТЕЛЯ В БИТРИКС ///*/                            
-                                $bxContactId = $bx->bx24->addContact([
-                                    'NAME'      => $firstname,
-                                    'LAST_NAME' => $lastname,
-                                    'PHONE'     => array((object)['VALUE' => $phone, 'VALUE_TYPE' => 'WORK']),
-                                    'EMAIL'     => array((object)['VALUE' => $email, 'VALUE_TYPE' => 'WORK']),
-                                    
-                                ]);
+                            try{$bxContactIdCheck = $bx->bx24->getContactsByPhone($phone);} catch (\Exception $e){$bxContactIdCheck = false;}                            
+                            if(empty($bxContactIdCheck)){
+                                $name = explode(' ', trim($fio)); $lastname = (!empty($name[0])) ? $name[0]: ''; $firstname = (!empty($name[1])) ? $name[1]: '';
+///*/ СОЗДАЁМ ПОЛЬЗОВАТЕЛЯ В БИТРИКС ///*/
+                                try{
+                                    $bxContactId = $bx->bx24->addContact([
+                                        'NAME'      => $firstname,
+                                        'LAST_NAME' => $lastname,
+                                        'PHONE'     => array((object)['VALUE' => $phone, 'VALUE_TYPE' => 'WORK']),
+                                    ]);
+                                    try{$bx->bx24->updateContact($bxContactId, ['EMAIL' => array((object)['VALUE' => $email, 'VALUE_TYPE' => 'WORK']),]);} catch (\Exception $e){}
+                                } catch (\Exception $e){
+                                    $bxContactId = self::DEFAULT_CONTACT;
+                                }
 ///*/ ЕСЛИ ПОЛЬЗОВАТЕЛЬ БИТРИКС СУЩЕСТВУЕТ БЕРЁМ ЕГО ID ///*/                            
                             }else{$bxContactId = $bxContactIdCheck[0]['ID'];}
+
 ///*/ ЕСЛИ В ЗАКАЗЕ НЕТ ИМЯ И ТЕЛЕФОН ВЫБИРАЕМ ИЗ БИТРИКС КОНТАКТ ПО УМОЛЧАНИЮ ///*/
                         }else{
-                            $defaultContact = $bx->bx24->getContact(self::DEFAULT_CONTACT);
+                            $defaultContact = $_SESSION['defaultContact'] = (!empty($_SESSION['defaultContact'])) ? $_SESSION['defaultContact'] : $bx->bx24->getContact(self::DEFAULT_CONTACT);
                             $phone = (empty($defaultContact['PHONE'][0]['VALUE'])) ? null : $defaultContact['PHONE'][0]['VALUE'];
                             $email = (empty($defaultContact['EMAIL'][0]['VALUE'])) ? null : $defaultContact['EMAIL'][0]['VALUE'];
                             $fio = $defaultContact['NAME'].' '.$defaultContact['LAST_NAME'];
@@ -164,7 +189,8 @@ public function index(Request $request){
                         try{$deal = $bx->bx24->getDeal($newOrder->deal, [\App\Bitrix24\Bitrix24API::$WITH_PRODUCTS, \App\Bitrix24\Bitrix24API::$WITH_CONTACTS]);
                             $dealId = (empty($deal['ID'])) ? 'ID is not defined or invalid' : $deal['ID'];
                         }catch(\Exception $e){
-                            $dealId = str_replace(['"', '}','{', '.', ','], '', (explode('.', explode(':', $e->getMessage())[11])[0]));
+                            $dealId = (!empty($EM = $e->getMessage()) && preg_match('#error_description(?: )?\"(?: )?\:(?: )?\"(.+?)\"#m', $EM, $E)) ? 
+                                      (!empty($E[1]) ? $E[1] : 'ID is not defined or invalid.' ) : 'ID is not defined or invalid.';
                         }//pa($dealId);exit;
 ///*/ ФОРМИРУЕМ ВРЕМЕННОЙ ПЕРИОД ЗАКАЗА И КОЛИЧЕСТВО ТОВАРОВ ДЛЯ БИТРИКС СДЕЛКИ ///*/                       
                         $periodsOrder = new \DatePeriod(new \DateTime(date('H:i', strtotime($newOrder->datefrom))), new \DateInterval('PT1H'), new \DateTime(date('H:i', strtotime($newOrder->dateto)))); 
@@ -173,7 +199,7 @@ public function index(Request $request){
                             $curOrders[$periodOrder->format('H:00')][$classId] = $ordersList[$i];
                         }
 ///*/ ЕСЛИ НЕТ СДЕЛКИ В БИТРИКСЕ, СОЗДАЁМ СДЕЛКУ ///*/
-                        if('ID is not defined or invalid' == $dealId){
+                        if('ID is not defined or invalid.' == $dealId){
                             $title = ((!empty($clasesDb[$classId]['name'])) ? '('.$clasesDb[$classId]['name'].') ' : '').
                                      ((!empty($newUser->fio)) ? $newUser->fio.' ' : '').
                                      ((!empty($newOrder->comment)) ? $newOrder->comment : '');
@@ -198,8 +224,9 @@ public function index(Request $request){
         //$return = ['result' => compact($data)];
         $return = ['result' => 'Ok', 'status' => 200];
     }else{
-        $return = ['result' => 'Don`t connection muzbooking', 'status' => 200];}
+        $return = ['result' => 'Don`t connection muzbooking', 'status' => 500];}
     
-return response()->json($return);
+return pa($return);
+//return response()->json($return);
 
 }}

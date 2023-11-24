@@ -3,7 +3,7 @@
 @section('title', 'Бронирование классов')
 @section('description', 'Бронирование классов')
 
-@section('body')                
+@section('body')
 <div style="padding-top: 15px; width:100%; background: rgb(255,255,255);">
 
     <div id="head" style="width:100%; height: 50px; background: #ffffff; min-height: 55px;">
@@ -12,11 +12,11 @@
                 
                 <!--div class="head_el__button_day"><span class="button_day">День</span> &#9660;</div-->
 
-                <a href="{{ route('front.admin', ['baseId' => $curCorpuses['muzid']]) }}"><div class="head_el__button_today">Админка</div></a>
-                <a href="{{ route('front.home', ['baseId' => $curCorpuses['muzid'], 'dateIn' => date('Y-m-d')]) }}"><div class="head_el__button_today">Сегодня</div></a>
+                <a href="{{ route('front.admin', ['baseId' => $curCorpuses['muzid'], 'DOMAIN' => $domain]) }}"><div class="head_el__button_today">Админка</div></a>
+                <a href="{{ route('front.home', ['baseId' => $curCorpuses['muzid'], 'dateIn' => date('Y-m-d'), 'DOMAIN' => $domain]) }}"><div class="head_el__button_today">Сегодня</div></a>
                 <div class="head_el__button_nav">
-                    <a href="{{ route('front.home', ['baseId' => $curCorpuses['muzid'], 'dateIn' => date('Y-m-d', strtotime('-1 day', $curTimestamp))]) }}"><button>&#60;</button></a>
-                    <a href="{{ route('front.home', ['baseId' => $curCorpuses['muzid'], 'dateIn' => date('Y-m-d', strtotime('+1 day', $curTimestamp))]) }}"><button>&#62;</button></a>
+                    <a href="{{ route('front.home', ['baseId' => $curCorpuses['muzid'], 'dateIn' => date('Y-m-d', strtotime('-1 day', $curTimestamp)), 'DOMAIN' => $domain]) }}"><button>&#60;</button></a>
+                    <a href="{{ route('front.home', ['baseId' => $curCorpuses['muzid'], 'dateIn' => date('Y-m-d', strtotime('+1 day', $curTimestamp)), 'DOMAIN' => $domain]) }}"><button>&#62;</button></a>
                 </div>
 
                 <div class="head_el__button_date" style="max-width: 112px;">
@@ -40,7 +40,7 @@
 @endif
                   <div class="head_el__drop_content">
 @foreach($Corpuses as $base)
-                    <a href="{{ route('front.home', ['baseId' => $base['muzid'],]) }}">
+                    <a href="{{ route('front.home', ['baseId' => $base['muzid'], 'DOMAIN' => $domain]) }}">
                         <div class="head_el__drop_content_class_img">
                             <img src="{{ $base['img'] ?? 'https://partner.musbooking.com/res/bases/220315-1650-2.jpeg'}}">
                             <div class="head_el__drop_content_class_label">{{ $base['name'] }}<br>
@@ -68,7 +68,7 @@
                 
                 @php $k = key(array_filter($Classes, function($ar) use($claseid){return ($claseid == $ar['muzid']);})); @endphp
                 @if(!empty($Classes[$k]))
-                <td classid="{{ $Classes[$k]['muzid'] }}"><div class="body__tb_room_item item_{{ $i }}"><span>{{ $Classes[$k]['name'] }}</span></div></td>
+                <td data-classid="{{ $Classes[$k]['muzid'] }}"><div class="body__tb_room_item item_{{ $i }}"><span>{{ $Classes[$k]['name'] }}</span></div></td>
                 @endif
 @php $i++ @endphp
 @endforeach
@@ -83,11 +83,11 @@ if(!empty($curOrders)){
         foreach($rooms as $room => $order){
             $i = ($room === array_key_first($rooms)) ? 1 : $i; 
             $kk = key(array_filter($Classes, function($ar) use($room){return ($room == $ar['muzid']);}));
-                echo '<td classid="'.$room.'">';
+                echo '<td data-classid="'.$room.'">';
                 
             if(empty($order)){echo '<div class="body__tb_block_empty item_'.$i.'">&nbsp;</div>';}
             else{echo'
-                    <div class="'.((preg_match('/^Импорт/m', $order['comment'])) ? 'body__tb_block_import item_'.$i.'">'.$order['comment'] : 'body__tb_block_select item_'.$i.'">'.$order['users']['fio']).'
+                    <div class="'.((preg_match('/^Импорт/m', $order['comment'] ?? '')) ? 'body__tb_block_import item_'.$i.'">'.$order['comment'] : 'body__tb_block_select item_'.$i.'">'.$order['users']['fio']).'
                         <div class="fl" style="display: none;">
                             <div class="card__fl_clients_item">
                                 <ul>
@@ -97,7 +97,7 @@ if(!empty($curOrders)){
                                     <li><span class="caption comment">Телефон: </span><a class="orange-title">'.($order['users']['phone'] ?? '').'</a></li>
                                     <li><span class="caption comment">Почта: </span><a class="orange-tile">'.($order['users']['email'] ?? '').'</a></li>
                                     <li><span class="caption comment">Количество человек: </span><strong>'.($order['amountpeople'] ?? '').'</strong></li>
-                                    <li><span class="caption comment">Стоимость заказа: </span><strong>'.((!empty($order['totalSum'])) ? $order['totalSum'].' ₽ (оплачено '.$order['totalSum'].' ₽)' : '').'</strong></li>
+                                    <li><span class="caption comment">Стоимость заказа: </span><strong>'.((!empty($Classes[$kk]['price'])) ? $Classes[$kk]['price'].' ₽ ' : '').'</strong></li>
                                 </ul>
                             </div>
                             <div class="card__fl_clients_item">
@@ -105,6 +105,13 @@ if(!empty($curOrders)){
                                     <li>
                                         <div class="caption comment">Комментарий сотрудника</div>
                                         <div><strong>'.$order['comment'].'</strong></div>
+                                    </li>
+                                    <li>
+                                        <div class="caption comment">Ссылка</div>
+                                        <a target="_blank" href="https://b24-9948j5.bitrix24.ru/crm/deal/details/'.$order['deal'].'/"><strong>'.($order['users']['fio'] ?? '_').'</strong></a>
+                                    </li>
+                                    <li>
+                                        <div class="reset_order" onclick="resetOrder(this);" data-id="'.($order['id'] ?? '_').'" data-muzid="'.($order['muzid'] ?? '_').'">Отменить бронирование</div>
                                     </li>
                                 </ul>
                             </div>
@@ -141,7 +148,7 @@ if(!empty($curOrders)){
                     
                     <div class="card__fl_clients_item">
 @foreach($addOrderNotification ?? [] as $notificid => $item)
-                        <div class="caption comment">{{ $item }}</div>
+                        <div class="caption comment"><?=str_replace('PHP_EOL', '<br>', $item);?></div>
 @endforeach
 
                         {{--
@@ -217,173 +224,5 @@ if(!empty($curOrders)){
     <div class="calendarBlack off"></div>
 
 </div>
-
-<script>
-function formatDate(date) {
-    var d = new Date(date),
-        month = '' + (d.getMonth() + 1),
-        day = '' + d.getDate(),
-        year = d.getFullYear();
-
-    if (month.length < 2)
-        month = '0' + month;
-    if (day.length < 2)
-        day = '0' + day;
-
-    return [year, month, day].join('-');
-}
-function getDateFromCalendar() {
-    let days = document.querySelectorAll(".calendar__body__days .calendar__body__item")
-
-    days.forEach(day => {
-        day.addEventListener("click", function () {
-
-            days.forEach(item => item.classList.contains("active") && item.classList.remove("active"))
-
-            day.classList.add("active")
-            let date;
-            if(day.classList.contains("lastMonth")) {
-                date = new Date(currYear, currMonth - 1, day.innerText)
-            } else if (day.classList.contains("nextMonth")) {
-                date = new Date(currYear, currMonth + 1, day.innerText)
-            } else {
-                date = new Date(currYear, currMonth, day.innerText)
-            }
-
-            let month = date.getMonth(),
-                currDay = date.getDate(),
-                fullYear = date.getFullYear(),
-                dayOfWeek = date.getDay(),
-                dateIn = formatDate(date)
-
-            // if ('URLSearchParams' in window) {
-            //     var searchParams = new URLSearchParams(window.location.search)
-            //     searchParams.set("dateIn", dateIn);
-            //     var newRelativePathQuery = window.location.pathname + '&' + searchParams.toString();
-            //     history.pushState(null, '', newRelativePathQuery);
-            // }
-
-            const origin = window.location.origin
-
-            window.location.replace(origin + "?baseId=" + baseId + "&dateIn=" + dateIn)
-
-            console.log(window.location)
-            console.log(myParam)
-
-            output.innerText = `${currDay} ${monthNames[month]} ${fullYear}`;
-            calendarHeader.innerText = `${weekDayNames[dayOfWeek !== 0 ? dayOfWeek - 1 : 6]}, ${monthNames[month].slice(0, 3)} ${currDay}`
-
-            calendar.classList.remove("on")
-            calendar.classList.add("off");
-            calendarBlack.classList.remove("on")
-            calendarBlack.classList.add("off")
-        })
-    })
-}
-
-    var baseId = '{{ $Classes[0]["muzid"] ?? ""}}';
-
-    const monthNames = ["Январь","Февраль","Март","Апрель","Май","Июнь","Июль","Август","Сентябрь","Октябрь","Ноябрь","Декабрь"]
-    const weekDayNames = ["пн","вт","ср","чт","пт","сб","вс"]
-
-    document.addEventListener("DOMContentLoaded", function () {
-        let currentDate = document.querySelector("#currentDate"),
-            calendar = document.querySelector(".calendar"),
-            calendarHeader = document.querySelector(".calendar__header"),
-            calendarBlack = document.querySelector(".calendarBlack"),
-            daysWrapper = document.querySelector(".calendar__body__days"),
-            arrows = document.querySelectorAll(".calendar__body__month button"),
-            output = document.querySelector(".head_el__button_date button"),
-            dropdown = document.querySelector(".calendar__dropdown"),
-            dropdownUl = document.querySelector(".calendar__dropdown ul"),
-            dropdownToggle = document.querySelector(".dropdownToggle"),
-            monthsItems = document.querySelectorAll(".calendar__dropdown ul li"),
-            card = document.querySelectorAll(".card__fl")[0],
-            blockImportSelect = Array.from(document.querySelectorAll(".body__tb_block_import, .body__tb_block_select"));
-
-        let date = new Date(),
-            currYear = date.getFullYear(),
-            currMonth = date.getMonth()
-
-        const renderCalendar = () => {
-            let firstDayofMonth = new Date(currYear, currMonth, 1).getDay(),
-                lastDateofMonth = new Date(currYear, currMonth + 1, 0).getDate(),
-                lastDayofMonth = new Date(currYear, currMonth, lastDateofMonth).getDay(),
-                lastDateofLastMonth = new Date(currYear, currMonth, 0).getDate()
-            let days = "";
-            for(let i = firstDayofMonth - 1; i > 0; i--){days += `<div class="calendar__body__item inactive lastMonth">${lastDateofLastMonth - i + 1}</div>`;}
-            for(let i = 1; i <= lastDateofMonth; i++){days += `<div class="calendar__body__item">${i}</div>`;}
-            for(let i = lastDayofMonth; i <= 6; i++){days += `<div class="calendar__body__item inactive nextMonth">${i - lastDayofMonth + 1}</div>`;}
-
-            currentDate.innerText = `${monthNames[currMonth]} ${currYear}`;
-            daysWrapper.innerHTML = days;
-        }
-        renderCalendar();
-
-        const showMonths = () => {
-            if(dropdown.classList.contains("off")) {
-                dropdown.classList.remove("off")
-                dropdown.classList.add("on")
-            } else {
-                dropdown.classList.remove("on")
-                dropdown.classList.add("off")
-            }
-        }
-
-        monthsItems.forEach(month => {
-            month.addEventListener("click", function () {
-                currMonth = month.dataset.index
-                showMonths()
-                renderCalendar()
-                getDateFromCalendar()
-            })
-        })
-
-        dropdownToggle.addEventListener("click", function () {
-            showMonths()
-        })
-
-        arrows.forEach(icon => {
-            icon.addEventListener("click", () => {
-                currMonth = icon.classList.contains("prev") ? currMonth - 1 : currMonth + 1;
-                if(currMonth < 0 || currMonth > 11) {
-                    date = new Date(currYear, currMonth, new Date().getDate());
-                    currYear = date.getFullYear();
-                    currMonth = date.getMonth();
-                } else {
-                    date = new Date();
-                }
-                renderCalendar(); getDateFromCalendar()
-            })
-        })
-
-
-        const urlParams = new URLSearchParams(window.location.search);
-        const myParam = urlParams;
-
-        getDateFromCalendar()
-
-        output.addEventListener("click", function () {
-            calendar.classList.contains("on") ? calendar.classList.remove("on") : calendar.classList.add("on");
-            calendarBlack.classList.contains("on") ? calendarBlack.classList.remove("on") : calendarBlack.classList.add("on")
-        })
-
-        calendarBlack.addEventListener("click", function () {
-            calendar.classList.remove("on")
-            calendar.classList.add("off");
-            calendarBlack.classList.remove("on")
-            calendarBlack.classList.add("off")
-        })
-        
-        blockImportSelect.forEach((el, index) => {el.addEventListener("click", () => {
-            console.log(card.innerHTML);
-            card.innerHTML = el.querySelector('.fl').innerHTML;
-            console.log(card);
-        });});
- 
-        
-    })
-
-</script>
 
 @endsection

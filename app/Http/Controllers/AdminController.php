@@ -54,7 +54,8 @@ public function index(Request $request){
 
     
 ///*/ Вывод ///*/
+    $domain = ($_REQUEST['DOMAIN'] ?? $_SERVER['HTTP_HOST']);
     $data = get_defined_vars(); unset($data['request'], $data['mb'], $data['bx']); $data = array_keys($data);
-    return view('front.admin', compact($data));            
+    return ($domain == self::DOMAIN) ? view('front.admin', compact($data)) : abort(404);        
 
 }else{abort(500);}}}
