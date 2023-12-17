@@ -13,6 +13,7 @@ class Orders extends Migration{
             $table->string('classesid')->nullable();
             $table->string('usersid')->nullable();
             $table->string('deal')->nullable();
+            $table->string('isour')->nullable();
             $table->datetime('datefrom')->nullable();
             $table->datetime('dateto')->nullable();
             $table->string('amountpeople')->nullable();

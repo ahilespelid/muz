@@ -51,6 +51,13 @@
             }
             
             document.addEventListener("DOMContentLoaded", () => {
+@foreach($addOrderNotification ?? [] as $notificid => $item)
+    @if(!empty($item))
+    
+                       alert('<?=str_replace('PHP_EOL', "\t '\n+'", $item);?>');
+    @endif
+@endforeach
+
             let priceReserve = document.querySelectorAll('.priceReserve'); //console.log(priceReserve);
             
             priceReserve.forEach((i, k) => {
@@ -84,14 +91,15 @@
                         '<div class="card__fl_clients_item">'+
                             '<div id="addOrder">'+
                             '<input type="hidden" name="add" value="order">'+
+                            '<input type="hidden" name="isour" value="1">'+
                             '<input type="hidden" name="DOMAIN" value="<?=$_SERVER['SERVER_NAME']?>">'+
                             '<input type="hidden" name="classid" value="<?=$curClass['muzid']?>">'+
                             '<input type="hidden" name="date" value="'+tr.dataset.date+'">'+
                             '<input type="hidden" name="times" value=\''+JSON.stringify(times)+'\'>'+
-                            '<div>Имя:&emsp;&emsp;&emsp;&emsp;&nbsp;&nbsp;&nbsp;<input type="text" name="name" value=""></div><br>'+
-                            '<div>Фамилия:&emsp;&emsp;&nbsp;&nbsp;&nbsp;<input type="text" name="sename" value=""></div><br>'+
-                            '<div>Телефон без +7:<input type="text" name="phone" value=""></div><br>'+
-                            '<div>Email:&emsp;&emsp;&emsp;&emsp;&nbsp;<input type="text" name="email" value=""></div><br>'+
+                            '<div>Имя:&emsp;&emsp;&emsp;&emsp;&nbsp;&nbsp;&nbsp;<input type="text" name="name" value=""></div>'+
+                            '<div>Фамилия:&emsp;&emsp;&nbsp;&nbsp;&nbsp;<input type="text" name="sename" value=""></div>'+
+                            '<div>Телефон без +7:<input type="text" name="phone" value=""></div>'+
+                            '<div>Email:&emsp;&emsp;&emsp;&emsp;&nbsp;<input type="text" name="email" value=""></div>'+
                             '<div>Коментарий:&nbsp;<textarea name="comment" cols="22"></textarea></div>'+
                             '</div>'+
                         '</div>';

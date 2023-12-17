@@ -13,7 +13,7 @@
 						<div class="table-hour tr tr-2x">
 							<div class="td mounth my_box my_box-center my_box--end">
 								<div class="btn-group bootstrap-select select-month asdas">
-									<button type="button" class="btn dropdown-toggle btn-default" data-toggle="dropdown" role="button" title="{{ $curDate['monthRus'] }}">{{ $monthShort[$curDate['month']] }}</button>
+									<a href="widget?classId={{ $curClass['id'] ?? ' ' }}" type="button" class="btn dropdown-toggle btn-default" data-toggle="dropdown" role="button" title="{{ $curDate['monthRus'] ?? ' ' }}">{{ $monthShort[$curDate['month'] - 1] ?? ' ' }}</a>
 								</div>
 							</div>
  @foreach($curTimes as $ctime)                             
@@ -25,17 +25,17 @@
 @for($i=0, $c=count($periodWidget); $i<$c; $i++)
 							<div class="tr tr-{{ $i }}" data-date="{{ $periodWidget[$i]['date']->format('d').' '.$month[$periodWidget[$i]['date']->format('m')-1].' '.$periodWidget[$i]['date']->format('Y') }}">
 								<div class="td days td-col-{{ $i }}">
-									<p class="text-center">{{ $periodWidget[$i]['weekday'] }}</p>
-									<p class="text-center">{{ $periodWidget[$i]['day'] }}</p>
+									<p class="text-center">{{ $periodWidget[$i]['weekday'] ?? ' ' }}</p>
+									<p class="text-center">{{ $periodWidget[$i]['day'] ?? ' ' }}</p>
 								</div>
 @php $col=$i+1; $row=1 @endphp
 @foreach(App\Http\Controllers\HomeController::getOrdersFromOurOneDay($curClass['id'], $periodWidget[$i]['date']->format('Y-m-d'), $curTimes) as $time => $order)
     @if(!empty($order))
-                                                                <div class="td td-time td-col-{{ $col }} td-row-{{ $row }} earReserv" data-time="{{ $time }}">
+                                                                <div class="td td-time td-col-{{ $col }} td-row-{{ $row }} earReserv" data-time="{{ $time ?? ' ' }}">
                                                                 </div>    
     @else
-								<div class="tr-{{ $i }} td td-time td-col-{{ $col }} td-row-{{ $row }}" data-price="{{ $curClass['price'] }}" data-time="{{ $time }}">
-									<div class="priceReserve"> {{ $curClass['price'] }} ₽</div>
+								<div class="tr-{{ $i }} td td-time td-col-{{ $col }} td-row-{{ $row }}" data-price="{{ $curClass['price'] ?? ' ' }}" data-time="{{ $time ?? ' ' }}">
+									<div class="priceReserve"> {{ $curClass['price'] ?? ' ' }} ₽</div>
 								</div>
     @endif
 @php $row++; @endphp                                                                
@@ -56,13 +56,13 @@
 				<div class="footer-items my_box my_box-start my_box--between">
 					<div class="footer-items__item footer-items__item-left">
 						<div id="base-img" class="view_photo"> <img src="{{ $curClass['img'] ?? '/assets/admin/images/avatar/classes.png' }}">
-							<div id="base-img" class="base_img__btn"> О площадке </div>
+							<div id="base-img" class="base_img__btn"> </div>
 						</div>
 						<div class="footer-selected-box your_change">
 							<div class="footer_info">
 								<ul class="my_list-unstyled footer-selected-list">
-									<li> <span class="footer-selected-list__value footer_data_base">{{ $curCorpuses['name'] }}</span> </li>
-									<li> <span class="footer-selected-list__value footer_data_room">{{ $curClass['name'] }}</span> </li>
+									<li> <span class="footer-selected-list__value footer_data_base">{{ $curCorpuses['name'] ?? ' ' }}</span> </li>
+									<li> <span class="footer-selected-list__value footer_data_room">{{ $curClass['name'] ?? ' ' }} </span> </li>
 								</ul>
 								<p><span class="footer-date"></span></p>
 							</div>
@@ -78,9 +78,12 @@
 						</div>
 						<div id="footer-next-btn" class="footer-next-btn-box">
 							<a class="footer-next-btn-box__button_button-gradient my_box my_box-center my_box--center next_button_move next_button_check" onclick="addOrderSubmit()"> <span>Далее</span> </a>
+@if(!empty($addOrderNotification))
 @foreach($addOrderNotification ?? [] as $notificid => $item)
                         <div class="caption comment"><?=str_replace('PHP_EOL', '<br>', $item);?></div>
 @endforeach
+@endif
+
 						</div>
 					</div>
 				</div>

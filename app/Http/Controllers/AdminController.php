@@ -20,6 +20,7 @@ use App\Models\Users;
 
 class AdminController extends Controller{    
 public function index(Request $request){
+    $domain = ($request->DOMAIN ?? $_SERVER['HTTP_HOST']);
 ///* / БЕРЁМ ИЗ БАЗЫ КОРПУСА И КЛАССЫ ///* / 
     if(!empty($Corpuses = (!empty($Corpuses = Corpuses::all()->toArray())) ? $Corpuses : null) && 
        !empty($Classes = (!empty($Classes = Classes::all()->toArray())) ? $Classes : null)){
@@ -37,6 +38,8 @@ public function index(Request $request){
 
         //pa($request->toArray());
         if(!empty($request->toArray()['up'])){
+            //pa($request->toArray());
+            //pa(phpinfo());exit;
             if(!empty($request->img)){$img = (!empty($p = $request->img->path())) ? 'data:'.$request->img->getClientMimeType().';base64, '.base64_encode(file_get_contents($p)) : null;}
             
             if('corpus' == $request->up && !empty($request->corpusid)){
@@ -47,14 +50,18 @@ public function index(Request $request){
                 $up = Classes::find($request->classid);
                 $up->img = $img ?? $up->img;
                 $up->price = $request->price ?? $up->price;
-                $up->save();
-            }
-            header('Location: '.route('front.admin', ['baseId' => $curCorpuses['muzid'], 'time' => time()])); exit;
+
+                if(is_writable($prices = resource_path('arrays'.DIRECTORY_SEPARATOR.'prices.php'))){
+                    $priceFA = include $prices;
+                    $priceFA[(false !== $key = array_search($up->muzid, array_column($priceFA, 'muzid'))) ? $key : max(array_keys($priceFA))+1] = ['muzid' => $up->muzid, 'price' => $up->price];
+                    if(file_put_contents(resource_path('arrays'.DIRECTORY_SEPARATOR.'prices.php'), '<?php'.PHP_EOL.'return '.var_export($priceFA, true).';'.PHP_EOL.' ?>', LOCK_EX)){
+                        $up->save();
+            }}}
+            header('Location: '.route('front.admin', ['baseId' => $curCorpuses['muzid'], 'time' => time(), 'DOMAIN' => $request->DOMAIN])); exit;
         }
 
     
 ///*/ Вывод ///*/
-    $domain = ($_REQUEST['DOMAIN'] ?? $_SERVER['HTTP_HOST']);
     $data = get_defined_vars(); unset($data['request'], $data['mb'], $data['bx']); $data = array_keys($data);
     return ($domain == self::DOMAIN) ? view('front.admin', compact($data)) : abort(404);        
 

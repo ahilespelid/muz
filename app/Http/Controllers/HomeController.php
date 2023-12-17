@@ -72,7 +72,7 @@ return $orders;}
     
 public function in(Request $request){
     $mb = new MuzController;
-    $bx = new BtxController;
+    $bx = new BtxController('https://b24-9948j5.bitrix24.ru/rest/3/1x1wha5pdsw7e3xi/');
 //pa($request->toArray());    
 ///* / БЕРЁМ ДОМЕН ЧЕРЕЗ КОТОРЫЙ ЗАПРАШИВАЕТСЯ, ЧТОБЫ ОГРАНИЧИТЬ ВИДИМОСТЬ ВНЕ БИТРИКС ПРИЛОЖЕНИЯ ///* /
     $domain = ($request->DOMAIN ?? self::DOMAIN);
@@ -98,9 +98,12 @@ public function in(Request $request){
         $curDate['calendar']    = $curDate['week'].', '.$monthShort[$curDate['month']-1].' '.$curDate['day'];
         $curDate['rus']         = $curDate['day'].' '.$curDate['monthRus'].' '.$curDate['year'];
         $curDate['datestamp']   = $curDate['year'].'-'.$curDate['month'].'-'.$curDate['day'];//strtotime($curDate['year'].'-'.$curDate['month'].'-'.$curDate['day']);
-///* / БЕРЁМ ТЕКУЩИЙ КОРПУС ИЗ МАССИВА КОРПУСОВ УЧИТЫВАЯ ПАРАМЕТР ЗАПРОСА КОРПУСА ///* /       
-        $curCorpuses = $Corpuses[(!empty($request->baseId)) ? array_search($request->baseId, array_column($Corpuses, 'muzid')) : 0]; 
-
+///* / БЕРЁМ ТЕКУЩИЙ КОРПУС ИЗ МАССИВА КОРПУСОВ УЧИТЫВАЯ ПАРАМЕТР ЗАПРОСА КОРПУСА ///* /
+        if(!empty($request->classId)){
+            $curCorpuses = $Corpuses[(!empty($corpId = Classes::where('id', $request->classId)->first('corpusesid')->toArray())) ? array_search($corpId['corpusesid'], array_column($Corpuses, 'muzid')) : 0];
+        }else{
+            $curCorpuses = $Corpuses[(!empty($request->baseId)) ? array_search($request->baseId, array_column($Corpuses, 'muzid')) : 0];
+        } 
         
 ///* / ГЕНЕРИРУЕМ МАССИВ С РАБОЧИМ ВРЕМЕНЕМ КОРПУСА ///* /                
         if(!empty($curCorpuses['workfrom']) && !empty($curCorpuses['workto'])){
@@ -114,6 +117,7 @@ public function in(Request $request){
         }
 ///* / БЕРЁМ КЛАССЫ ДЛЯ КОРПУСА ИЗ БАЗЗЫ ///* /               
         if($Classes = (!empty($curCorpuses['muzid']) && !empty($Classes = Classes::where('corpusesid', $curCorpuses['muzid'])->get()->toArray())) ?  $Classes : null){
+        $curClass = (!empty($request->classId)) ? $Classes[(0 < $key = array_search($request->classId, array_column($Classes, 'id'))) ? $key : 0] : $Classes[0];
         //usort($clases, function($a, $b){return $a['order'] <=> $b['order'];});//pa($Corpuses); exit; pa($curCorpuses);
 ///* / ПЕРЕБИРАЕМ МАССИВ КЛАСОВ ИЗ БАЗЫ ///* /
             foreach($Classes as $Class){
@@ -218,13 +222,13 @@ public function in(Request $request){
     }}}}
 ///* / БЕРЁМ КЛАСС ИЗ ПАРАМЕТРОВ ///* /
 //$curClass = (!empty($request->classId)) ($request->classId ?? $Classes[0]['muzid']);
-$curClass = (!empty($request->classId)) ? $Classes[(0 < $key = array_search($request->classId, array_column($Classes, 'id'))) ? $key : 0] : $Classes[0];
+
 //pa($curClass); exit;
 ///* / БЕРЁМ УВЕДОМЛЕНИЯ ИЗ ПАРАМЕТРОВ ///* /
 $addOrderNotification = (empty($request->addOrderNotification)) ? [] : [$request->addOrderNotification];
 
 ///* / ОБРАБАТЫВАЕМ ДОБАВЛЕНИЕ СДЕЛКИ ///* /    
-    if('order' == $request->add){
+    if('order' == $request->add){//pa($request->toArray()); exit;
 ///* / ОБРАБАТЫВАЕМ ДОМЕН, ЧТОБЫ ОГРАНИЧИТЬ ВИДИМОСТЬ ВНЕ БИТРИКС ПРИЛОЖЕНИЯ ///* /
         //$request->merge(['DOMAIN' => self::DOMAIN]);
 ///* / ПРИВОДИМ ДАТУ СО СТРАНИЦЫ К РАБОЧЕМУ ФОРМАТУ ///* /
@@ -269,10 +273,17 @@ $addOrderNotification = (empty($request->addOrderNotification)) ? [] : [$request
             $l = 0; foreach($orderTimes as $datetime){
                 if(empty($datetime)){$l++; continue;}
                 $browserOrders[$l][] = $datetime;
-            }$browserOrders = array_values($browserOrders); //pa($browserOrder);exit;
+            }$browserOrders = array_values($browserOrders); 
+            //pa($browserOrders);exit;
                          
 ///*/ ПРОВЕРЯЕМ ЕСТЬ ЛИ ПОЛЬЗОВАТЕЛЬ В БИТРИКС ПО ТЕЛЕФОНУ, ЕСЛИ НЕТ ///*/
-            if(empty($bxContactIdCheck = $bx->bx24->getContactsByPhone($phone))){
+            //try{$bxContactIdCheck = $bx->bx24->getContactsByPhone($phone);} catch(\Exception $ex){
+            //    sleep('2');
+            //    $bxContactIdCheck = $bx->bx24->getContactsByPhone($phone);
+            //}
+            //$bxContactIdCheck = $bx->getContactsByPhone($phone);
+            //pa($bxContactIdCheck);exit;
+            if(empty($bxContactIdCheck = $bx->getContactsByPhone($phone))){
                 //list($lastname, $firstname) = explode(' ', $fio);
 ///*/ СОЗДАЁМ ПОЛЬЗОВАТЕЛЯ В БИТРИКС ///*/                            
                 $bxContactId = $bx->bx24->addContact([
@@ -315,7 +326,7 @@ $addOrderNotification = (empty($request->addOrderNotification)) ? [] : [$request
                     $newOrder->muzid = $newMuzOrder['id']; 
                     $newOrder->classesid = $addOrderClass['id'] ?? '';
                     $newOrder->usersid = $userId;	
-                    //$newOrder->deal = '';
+                    $newOrder->isour = ($request->isour ?? 1);
                     $newOrder->datefrom = $newMuzOrderDateFrom->format('Y-m-d H:i:s');
                     $newOrder->dateto = $newMuzOrderDateTo->format('Y-m-d H:i:s');
                     //$newOrder->amountpeople =  null;
@@ -326,12 +337,13 @@ $addOrderNotification = (empty($request->addOrderNotification)) ? [] : [$request
                     try{$deal = $bx->bx24->getDeal($newOrder->deal, [\App\Bitrix24\Bitrix24API::$WITH_PRODUCTS, \App\Bitrix24\Bitrix24API::$WITH_CONTACTS]);
                         $dealId = (empty($deal['ID'])) ? 'ID is not defined or invalid' : $deal['ID'];
                     }catch(\Exception $e){
-                        $dealId = str_replace(['"', '}','{', '.', ','], '', (explode('.', explode(':', $e->getMessage())[11])[0]));
+                        $dealId = (!empty($EM = $e->getMessage()) && preg_match('#error_description(?: )?\"(?: )?\:(?: )?\"(.+?)\"#m', $EM, $E)) ? 
+                                  (!empty($E[1]) ? $E[1] : 'ID is not defined or invalid.' ) : 'ID is not defined or invalid.';
                     }//pa($dealId);exit;
 ///*/ ФОРМИРУЕМ КОЛИЧЕСТВО ТОВАРОВ ДЛЯ БИТРИКС СДЕЛКИ ///*/                       
                     $quantity = $hoursCount;
 ///*/ ЕСЛИ НЕТ СДЕЛКИ В БИТРИКСЕ, СОЗДАЁМ СДЕЛКУ ///*/
-                    if('ID is not defined or invalid' == $dealId){
+                    if('ID is not defined or invalid.' == $dealId){
                         $title = ((!empty($addOrderClass['name'])) ? '('.$addOrderClass['name'].') ' : '').
                                  ((!empty($newUser->fio)) ? $newUser->fio.' ' : '').
                                  ((!empty($newOrder->comment)) ? $newOrder->comment : '');
@@ -409,11 +421,11 @@ $addOrderNotification = (empty($request->addOrderNotification)) ? [] : [$request
 }
     
 public function stoimost(Request $request){
-    if(!empty($request->classid) && $validator = Validator::make($request->all(), ['classid' => 'required|min:36', 'times' => 'required'])){
-        if($validator->passes() && $Class = (!empty($request->classid) && !empty($Class = Classes::where('muzid', $request->classid)->first()->toArray())) ?  $Class : null){
-            $countTimes = count(explode(',', $request->times));
-            return response()->json(['result' => $Class['price']*$countTimes ?? null]);
-}}}
+    $validator = Validator::make($request->all(), ['classid' => 'required|min:36', 'times' => 'required']);
+    $ret = ($validator->passes() && is_numeric($countTimes = count(explode(',', $request->times))) &&
+            ($priceDB = (!empty($request->classid) && !empty($priceDB = Classes::where('muzid', $request->classid)->first('price')->toArray())) ?  $priceDB : null)) ?
+        ['result' => $priceDB['price']*$countTimes ?? null] : ['result' => null];
+return response()->json($ret);}
 
 public function reset(Request $request){
     if(empty($request->muzid)){return null;}

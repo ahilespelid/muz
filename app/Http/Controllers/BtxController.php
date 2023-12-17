@@ -8,8 +8,9 @@ use App\Bitrix24\Bitrix24APIException;
 
 class BtxController extends Controller{
     private $wh; public $bx24;    
-public function __construct(){
-    $this->setWh('https://b24-9948j5.bitrix24.ru/rest/13/khvv0ut4rdpfeno3/');   
+public function __construct($wh = 'https://b24-9948j5.bitrix24.ru/rest/13/khvv0ut4rdpfeno3/'){
+    $this->setWh(($wh ?? 'https://b24-9948j5.bitrix24.ru/rest/13/khvv0ut4rdpfeno3/'));
+    //pa($wh);pa($this->wh);
 }
 
 public function addDiel(array $opt):bool{//$opt = ['TITLE' => 'Тестовая сделка №1', 'COMPANY_ID' => 6, 'CONTACT_ID' => 312]
@@ -23,5 +24,12 @@ return (empty($ret)) ? null : $ret;}
 public function setWh(string $wh):void{
     $this->wh = $wh; $this->bx24 = new Bitrix24API($this->wh);
 }public function getWh():string{return $this->wh;}
+
+public function getContactsByPhone($phone){
+    try{
+        return $this->bx24->getContactsByPhone($phone);
+    }catch(\Exception $ex){
+        sleep(2); $this->getContactsByPhone($phone);
+}}
 
 }

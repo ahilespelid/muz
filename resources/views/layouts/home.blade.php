@@ -709,6 +709,7 @@ document.addEventListener('DOMContentLoaded', () => {
                         '<div>Фамилия:&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<input type="text" name="sename" value=""> </div>'+
                         '<div>Телефон без +7:&nbsp;<input type="text" name="phone" value=""> </div>'+
                         '<div>Email:&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<input type="text" name="email" value=""> </div>'+
+                        '<div>Сделан здесь:&nbsp;&nbsp;&nbsp;&nbsp;<input type="checkbox" checked disabled><input type="hidden" name="isour" value="1"></div>'+
                         '<div>Коментарий:&nbsp;<textarea name="comment" cols="24"></textarea> </div>'+
                         '</div>'+
                         //'</form>'+
@@ -791,7 +792,8 @@ document.addEventListener("DOMContentLoaded", function () {
 
                 const origin = window.location.origin
 
-                window.location.replace(origin + "?baseId=<?=$curClass['muzid'];?>&dateIn=" + dateIn + "&DOMAIN=<?=$domain;?>")
+                //console.log(origin + "?baseId=<?=$curCorpuses['muzid'];?>&dateIn=" + dateIn + "&DOMAIN=<?=$domain;?>");
+                window.location.replace(origin + "?baseId=<?=$curCorpuses['muzid'];?>&dateIn=" + dateIn + "&DOMAIN=<?=$domain;?>")
 
                 // output.innerText = `${currDay} ${monthNames[month]} ${fullYear}`;
                 calendarHeader.innerText = `${weekDayNames[dayOfWeek !== 0 ? dayOfWeek - 1 : 6]}, ${monthNames[month].slice(0, 3)} ${currDay}`

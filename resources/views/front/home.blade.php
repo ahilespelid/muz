@@ -40,7 +40,7 @@
 @endif
                   <div class="head_el__drop_content">
 @foreach($Corpuses as $base)
-                    <a href="{{ route('front.home', ['baseId' => $base['muzid'], 'DOMAIN' => $domain]) }}">
+                    <a href="{{ route('front.home', ['baseId' => $base['muzid'], 'DOMAIN' => $domain, 'dateIn' =>  $curDate['datestamp'] ?? date('Y-m-d')]) }}">
                         <div class="head_el__drop_content_class_img">
                             <img src="{{ $base['img'] ?? 'https://partner.musbooking.com/res/bases/220315-1650-2.jpeg'}}">
                             <div class="head_el__drop_content_class_label">{{ $base['name'] }}<br>
@@ -96,6 +96,7 @@ if(!empty($curOrders)){
                                     <li><span class="caption comment">Ф.И.О: </span><strong>'.($order['users']['fio'] ?? '').'</strong></li>
                                     <li><span class="caption comment">Телефон: </span><a class="orange-title">'.($order['users']['phone'] ?? '').'</a></li>
                                     <li><span class="caption comment">Почта: </span><a class="orange-tile">'.($order['users']['email'] ?? '').'</a></li>
+                                    <li><span class="caption comment">Сделан здесь: <input type="checkbox" '.((empty($order['isour'])) ? '' : 'checked').' disabled></span></li>
                                     <li><span class="caption comment">Количество человек: </span><strong>'.($order['amountpeople'] ?? '').'</strong></li>
                                     <li><span class="caption comment">Стоимость заказа: </span><strong>'.((!empty($Classes[$kk]['price'])) ? $Classes[$kk]['price'].' ₽ ' : '').'</strong></li>
                                 </ul>
