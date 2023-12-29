@@ -1,4 +1,4 @@
-ex#!/bin/sh
+#!/bin/sh
 # Parer RUN
 #clear;
  
