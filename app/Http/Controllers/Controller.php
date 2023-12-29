@@ -11,7 +11,8 @@ class Controller extends BaseController{
 use AuthorizesRequests, DispatchesJobs, ValidatesRequests;
 const PHONE_CODE = '+7', 
       DEFAULT_CONTACT = 199,
-      DOMAIN = 'b24-9948j5.bitrix24.ru',
+      //DOMAIN = 'b24-9948j5.bitrix24.ru',
+      DOMAIN = 'musclass.bitrix24.ru',
       AMOUT_PEOPLE_ID = 'fe7f09ae-14ac-4071-9d99-e278cef61ea5',
       MUZ_ID_BX = 'UF_CRM_1697011461644',    
       DATE_FROM_BX = 'UF_CRM_1697156890471',    

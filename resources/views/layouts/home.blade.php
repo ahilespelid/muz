@@ -194,9 +194,11 @@ button{
 .body__tb_block_import:hover{border: 3px solid rgb(0,191,255);}
 .body__tb_block_select{background: rgb(31,235,0); border: 3px solid rgb(31,235,0);}
 .body__tb_block_select:hover{border: 3px solid rgb(0,191,255);}
+.body__tb_block_isour{background: rgb(91, 49, 151); border: 3px solid rgb(91, 49, 151); color: rgb(255,235,255);}
+.body__tb_block_isour:hover{border: 3px solid rgb(0,191,255);}
 .body__tb_block_empty{background: rgb(233,233,233); border: 3px solid rgb(233,233,233);}
 .body__tb_block_empty:hover{border: 3px solid rgb(0,191,255);}
-.body__tb_block_empty, .body__tb_block_select, .body__tb_block_import{
+.body__tb_block_empty, .body__tb_block_select, .body__tb_block_import, .body__tb_block_isour{
     transform: unset; 
     display: flex; 
     flex-direction: row; 
@@ -764,7 +766,7 @@ document.addEventListener("DOMContentLoaded", function () {
         dropdownToggle = document.querySelector(".dropdownToggle"),
         monthsItems = document.querySelectorAll(".calendar__dropdown ul li"),
         card = document.querySelectorAll(".card__fl")[0],
-        blockImportSelect = Array.from(document.querySelectorAll(".body__tb_block_import, .body__tb_block_select"));
+        blockImportSelect = Array.from(document.querySelectorAll(".body__tb_block_import, .body__tb_block_select, .body__tb_block_isour"));
 
     function getDateFromCalendar() {
         let days = document.querySelectorAll(".calendar__body__days .calendar__body__item")

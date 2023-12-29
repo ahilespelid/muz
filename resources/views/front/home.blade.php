@@ -87,7 +87,7 @@ if(!empty($curOrders)){
                 
             if(empty($order)){echo '<div class="body__tb_block_empty item_'.$i.'">&nbsp;</div>';}
             else{echo'
-                    <div class="'.((preg_match('/^Импорт/m', $order['comment'] ?? '')) ? 'body__tb_block_import item_'.$i.'">'.$order['comment'] : 'body__tb_block_select item_'.$i.'">'.$order['users']['fio']).'
+                    <div class="'.((preg_match('/^Импорт/m', $order['comment'] ?? '')) ? 'body__tb_block_import item_'.$i.'">'.$order['comment'] : ((1 == $order['isour']) ? 'body__tb_block_isour' : 'body__tb_block_select').' item_'.$i.'">'.$order['users']['fio']).'
                         <div class="fl" style="display: none;">
                             <div class="card__fl_clients_item">
                                 <ul>

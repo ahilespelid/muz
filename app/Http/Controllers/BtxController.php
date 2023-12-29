@@ -8,8 +8,8 @@ use App\Bitrix24\Bitrix24APIException;
 
 class BtxController extends Controller{
     private $wh; public $bx24;    
-public function __construct($wh = 'https://b24-9948j5.bitrix24.ru/rest/13/khvv0ut4rdpfeno3/'){
-    $this->setWh(($wh ?? 'https://b24-9948j5.bitrix24.ru/rest/13/khvv0ut4rdpfeno3/'));
+public function __construct($wh='https://musclass.bitrix24.ru/rest/3/j50n6tryd4yxv5j8/'){
+    $this->setWh(($wh ?? 'https://musclass.bitrix24.ru/rest/3/j50n6tryd4yxv5j8/'));
     //pa($wh);pa($this->wh);
 }
 

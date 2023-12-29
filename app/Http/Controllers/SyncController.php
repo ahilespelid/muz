@@ -77,10 +77,12 @@ public function index(Request $request){
                 //pa($newClass->product); exit;
 ///*/ ВЫБИРАЕМ ТОВАР ИЗ БИТРИКСА ЕСЛИ ЕСТЬ ///*/         
                 try{$bxProductId = $bx->bx24->getProduct($newClass->product)['ID'];}catch(\Exception $e){
-                    $bxProductId = (str_replace(['"', '}','{', '.', ','], '', explode(':', $e->getMessage())[6]));
+                    $bxProductId = (!empty($EM = $e->getMessage()) && preg_match('#error_description(?: )?\"(?: )?\:(?: )?\"(.+?)\"#m', $EM, $E)) ? 
+                                   (!empty($E[1]) ? $E[1] : 'ID is not defined or invalid.' ) : 'ID is not defined or invalid.';
+                    //$bxProductId = (str_replace(['"', '}','{', '.', ','], '', explode(':', $e->getMessage())[6]));pa($e->getMessage()); exit;
                 }
 ///*/ ЕСЛИ НЕТ ТОВАРА В БИТРИКСЕ, СОЗДАЁМ ТОВАР С ЦЕНОЙ КЛАССА ///*/ 
-                if('Product is not found' == $bxProductId || 'ID is not defined or invalid' == $bxProductId){
+                if('Product is not found' == $bxProductId || 'ID is not defined or invalid.' == $bxProductId){
                     $bxProductId = $newClass->product = $bx->bx24->addProduct([
                         'NAME' => $newClass->name, 
                         'CURRENCY_ID' => 'RUB', 
@@ -205,7 +207,7 @@ pa($orders);
                                      ((!empty($newOrder->comment)) ? $newOrder->comment : '');
                             $title = (!empty($title)) ? $title : 'Безымянная - '.time();
                             
-                            $bx->bx24->setDealProductRows($dealId = $bx->bx24->addDeal([
+                            @$bx->bx24->setDealProductRows($dealId = $bx->bx24->addDeal([
                                 'TITLE' => $title, 
                                 'CONTACT_ID' => $bxContactId, 
                                 self::MUZ_ID_BX => $newOrder->muzid, 
