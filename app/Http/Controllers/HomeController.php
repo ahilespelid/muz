@@ -282,7 +282,7 @@ $addOrderNotification = (empty($request->addOrderNotification)) ? [] : [$request
             //    $bxContactIdCheck = $bx->bx24->getContactsByPhone($phone);
             //}
             //$bxContactIdCheck = $bx->getContactsByPhone($phone);
-            //pa($bxContactIdCheck);exit;
+            //pa($bxContactIdCheck);exit; pa($phone);exit;
             if(empty($bxContactIdCheck = $bx->getContactsByPhone($phone))){
                 //list($lastname, $firstname) = explode(' ', $fio);
 ///*/ СОЗДАЁМ ПОЛЬЗОВАТЕЛЯ В БИТРИКС ///*/                            
