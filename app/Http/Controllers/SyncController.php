@@ -92,8 +92,11 @@ public function index(Request $request){
                 $newClass->save();           
             } 
         }
+
+
+
 ///*/-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------///*/
-pa($orders);        
+//pa($orders);        
 ///*/ ЕСЛИ В КЛАССАХ ЕСТЬ ЗАКАЗЫ ///*/        
         if(is_array($orders) && !empty($orders)){
 ///*/ фОРМИРУЕМ МАССИВ ТЕКУЩИХ ДЛЯ КЛАССОВ ЗАКАЗОВ ///*/
@@ -133,7 +136,9 @@ pa($orders);
 ///*/ ПРОВЕРЯЕМ ЕСТЬ ЛИ ЗАКАЗЫ В ТЕКУЩЕМ КЛАССЕ ///*/
                 if(!empty($ordersList)){
 ///*/ ПЕРЕБИРАЕМ ЗАКАЗЫ ИЗ МУЗБУКИНГА В ЦИКЛЕ ///*/
-                    for($i=0,$c=count($ordersList); $i<$c; $i++){//pa($ordersList[$i]['dateFrom']);exit;
+                    $c=count($ordersList);
+                    $return['muz_in_orders'][$clasesDb[$classId]['id']] = $c;
+                    for($i=0; $i<$c; $i++){//pa($ordersList[$i]['dateFrom']);exit;
 ///*/ ЕСЛИ В ЗАКАЗЕ ЕСТЬ ИМЯ И ТЕЛЕФОН ///*/
                         if(!empty($phone = $ordersList[$i]['phone']) && !empty($fio = $ordersList[$i]['fio'])){
                             $phone = self::PHONE_CODE.' '.$phone;
@@ -148,8 +153,9 @@ pa($orders);
                                         'NAME'      => $firstname,
                                         'LAST_NAME' => $lastname,
                                         'PHONE'     => array((object)['VALUE' => $phone, 'VALUE_TYPE' => 'WORK']),
+                                        'EMAIL'     => array((object)['VALUE' => $email, 'VALUE_TYPE' => 'WORK']),
                                     ]);
-                                    try{$bx->bx24->updateContact($bxContactId, ['EMAIL' => array((object)['VALUE' => $email, 'VALUE_TYPE' => 'WORK']),]);} catch (\Exception $e){}
+                                    //try{$bx->bx24->updateContact($bxContactId, ['EMAIL' => array((object)['VALUE' => $email, 'VALUE_TYPE' => 'WORK']),]);} catch (\Exception $e){}
                                 } catch (\Exception $e){
                                     $bxContactId = self::DEFAULT_CONTACT;
                                 }
@@ -166,7 +172,7 @@ pa($orders);
                         }//pa($defaultContact); exit;
 ///*/ ЕСЛИ В ЗАКАЗЕ НЕТ EMAIL И В БИТРИКС НЕТ ТО ПУСТОЕ ПОЛЕ ДЕЛАЕМ ДЛЯ EMAIL ///*/                            
                         $email = (empty($ordersList[$i]['email'])) ? ((empty($email)) ? null : $email) : $ordersList[$i]['email'];
-///*/ ВЫБИРАЕМ ИЛИ СОЗДАЁМ ЕСЛИ НЕТ ПОЛЬЗОВАТЕЛЯ С ТАКИМ ТЕЛЕФОНО И ИМЕНЕМ В НАШЕЙ БАЗЕ ///*/
+///*/ ВЫБИРАЕМ ИЛИ СОЗДАЁМ ЕСЛИ НЕТ ПОЛЬЗОВАТЕЛЯ С ТАКИМ ТЕЛЕФОНОМ И ИМЕНЕМ В НАШЕЙ БАЗЕ ///*/
                         $newUser = Users::firstOrCreate(['phone' => $phone, 'fio' => $fio]);
                         $newUser->phone = $phone;
                         $newUser->fio = $fio;
@@ -188,47 +194,65 @@ pa($orders);
                         $newOrder->comment = $ordersList[$i]['comment'];                    
                         $newOrder->save();
 ///*/ ВЫБИРАЕМ СДЕЛКУ ИЗ БИТРИКСА ЕСЛИ ЕСТЬ ///*/
+                        try{
+                            $eachDeals = $bx->bx24->getDealListParam($param = [
+                                'order'  => ['ID' => 'DESC'],
+                                'filter' => ['='.self::MUZ_ID_BX => $ordersList[$i]['id']],
+                                'select' => ['ID', self::MUZ_ID_BX],
+                                'cache'  => ['ttl' => 3600],
+                                'limit'  => 1 
+                            ]);
+                            do{ $deals = $eachDeals->current();
+                                $dealId = (empty($deals)) ? 'ID is not defined or invalid.' : $deals[0]['ID'];
+                            } while(0);
+                        }catch(\Exception $e){$dealId = 'ID is not defined or invalid.';}
+//pa($dealId); //exit;
+                        /*
                         try{$deal = $bx->bx24->getDeal($newOrder->deal, [\App\Bitrix24\Bitrix24API::$WITH_PRODUCTS, \App\Bitrix24\Bitrix24API::$WITH_CONTACTS]);
                             $dealId = (empty($deal['ID'])) ? 'ID is not defined or invalid' : $deal['ID'];
                         }catch(\Exception $e){
                             $dealId = (!empty($EM = $e->getMessage()) && preg_match('#error_description(?: )?\"(?: )?\:(?: )?\"(.+?)\"#m', $EM, $E)) ? 
                                       (!empty($E[1]) ? $E[1] : 'ID is not defined or invalid.' ) : 'ID is not defined or invalid.';
-                        }//pa($dealId);exit;
+                        }//
+                        pa($dealId);exit;
+                         */
 ///*/ ФОРМИРУЕМ ВРЕМЕННОЙ ПЕРИОД ЗАКАЗА И КОЛИЧЕСТВО ТОВАРОВ ДЛЯ БИТРИКС СДЕЛКИ ///*/                       
                         $periodsOrder = new \DatePeriod(new \DateTime(date('H:i', strtotime($newOrder->datefrom))), new \DateInterval('PT1H'), new \DateTime(date('H:i', strtotime($newOrder->dateto)))); 
                         $quantity = 0;
                         foreach($periodsOrder as $periodOrder){$quantity++;
                             $curOrders[$periodOrder->format('H:00')][$classId] = $ordersList[$i];
                         }
-///*/ ЕСЛИ НЕТ СДЕЛКИ В БИТРИКСЕ, СОЗДАЁМ СДЕЛКУ ///*/
+///*/ ЕСЛИ НЕТ СДЕЛКИ В БИТРИКСЕ, СОЗДАЁМ СДЕЛКУ ///* /
                         if('ID is not defined or invalid.' == $dealId){
                             $title = ((!empty($clasesDb[$classId]['name'])) ? '('.$clasesDb[$classId]['name'].') ' : '').
                                      ((!empty($newUser->fio)) ? $newUser->fio.' ' : '').
                                      ((!empty($newOrder->comment)) ? $newOrder->comment : '');
                             $title = (!empty($title)) ? $title : 'Безымянная - '.time();
-                            
-                            @$bx->bx24->setDealProductRows($dealId = $bx->bx24->addDeal([
-                                'TITLE' => $title, 
-                                'CONTACT_ID' => $bxContactId, 
-                                self::MUZ_ID_BX => $newOrder->muzid, 
-                                self::DATE_FROM_BX => $newOrder->datefrom, 
-                                self::DATE_TO_BX => $newOrder->dateto, 
-                            ]), [[ 'PRODUCT_ID' => $clasesDb[$classId]['product'], 'PRICE' => $clasesDb[$classId]['price'], 'QUANTITY' => $quantity ]]);
-                        }
+                            try{
+                                $bx->bx24->setDealProductRows($dealId = $bx->bx24->addDeal([
+                                    'TITLE' => $title, 
+                                    'CONTACT_ID' => $bxContactId, 
+                                    self::MUZ_ID_BX => $newOrder->muzid, 
+                                    self::CLASS_NAME_BX => $clasesDb[$classId]['name'], 
+                                    self::DATE_FROM_BX => $newOrder->datefrom, 
+                                    self::DATE_TO_BX => $newOrder->dateto, 
+                                ]), [[ 'PRODUCT_ID' => $clasesDb[$classId]['product'], 'PRICE' => $clasesDb[$classId]['price'], 'QUANTITY' => $quantity ]]);
+                            }catch(\Exception $e){$dealId = '';}
+                        }else{$return['bx_id_already_exists'][] = $dealId;}
                         $newOrder->deal = $dealId;
                         $newOrder->save();
-                        //pa($dealId); pa($clasesDb[$classId]['product']);exit;
+                        //pa($dealId); pa($clasesDb[$classId]['product']);exit; //*/
         }}}}
 ///*/-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------///*/
 
 ///*/ Вывод ///*/
         $data = get_defined_vars(); unset($data['request'], $data['mb'], $data['bx']); $data = array_keys($data);
         //$return = ['result' => compact($data)];
-        $return = ['result' => 'Ok', 'status' => 200];
+        $return += ['result' => 'Ok', 'status' => 200];
     }else{
-        $return = ['result' => 'Don`t connection muzbooking', 'status' => 500];}
+        $return += ['result' => 'Don`t connection muzbooking', 'status' => 500];}
     
-return pa($return);
+return json_encode($return);
 //return response()->json($return);
 
 }}

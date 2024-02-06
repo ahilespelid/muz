@@ -14,6 +14,7 @@ const PHONE_CODE = '+7',
       //DOMAIN = 'b24-9948j5.bitrix24.ru',
       DOMAIN = 'musclass.bitrix24.ru',
       AMOUT_PEOPLE_ID = 'fe7f09ae-14ac-4071-9d99-e278cef61ea5',
+      CLASS_NAME_BX = 'UF_CRM_1706773450067',    
       MUZ_ID_BX = 'UF_CRM_1697011461644',    
       DATE_FROM_BX = 'UF_CRM_1697156890471',    
       DATE_TO_BX = 'UF_CRM_1697156942243';    
